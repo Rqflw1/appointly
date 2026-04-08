@@ -4,16 +4,29 @@ import { User } from "@/app/_prisma/client";
 import { protectedRoute } from "@/app/_lib/serverFunctions/auth";
 import PageHeader from "@/app/_components/ui/PageHeader";
 import EmptyState from "@/app/_components/ui/EmptyState";
+import CalendarDateForm from "@/app/_components/calendar/CalendarDateForm";
+
+export const dynamic = "force-dynamic";
 
 interface PageProps {
   user: User;
-  searchParams?: { date?: string };
+  searchParams?: Promise<{ date?: string }>;
+}
+
+function normalizeDate(input?: string) {
+  if (!input) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(input)) return input;
+  const match = input.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+  if (match) return `${match[3]}-${match[2]}-${match[1]}`;
+  return "";
 }
 
 export default protectedRoute(Page);
 async function Page({ user, searchParams }: PageProps) {
   const scope = scopeWhere(user);
-  const date = searchParams?.date || new Date().toISOString().slice(0, 10);
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const normalized = normalizeDate(resolvedSearchParams?.date);
+  const date = normalized || new Date().toISOString().slice(0, 10);
   const start = new Date(`${date}T00:00:00`);
   const end = new Date(`${date}T23:59:59`);
 
@@ -27,17 +40,7 @@ async function Page({ user, searchParams }: PageProps) {
     <div className="space-y-6">
       <PageHeader title="Calendar" description="Daily schedule" />
 
-      <form className="flex items-center gap-2">
-        <input
-          type="date"
-          name="date"
-          defaultValue={date}
-          className="rounded-md border px-3 py-2 text-sm"
-        />
-        <button type="submit" className="rounded-md border px-3 py-2 text-sm">
-          Go
-        </button>
-      </form>
+      <CalendarDateForm date={date} />
 
       {appointments.length === 0 ? (
         <EmptyState title="No appointments on this day" />

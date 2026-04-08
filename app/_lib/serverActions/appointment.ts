@@ -8,6 +8,7 @@ import { scopeId } from "../serverFunctions/rbac";
 import { logAudit } from "../serverFunctions/audit";
 import { verifyCsrfToken } from "../serverFunctions/csrf";
 import { revalidatePath } from "next/cache";
+import { PaymentMethod, PaymentStatus } from "@/app/_prisma/enums";
 
 function getDayRange(date: Date) {
   const start = new Date(date);
@@ -38,6 +39,32 @@ async function hasConflict(
       appt.startAt.getTime() + appt.durationMinutes * 60000
     );
     return startAt < apptEnd && endAt > appt.startAt;
+  });
+}
+
+async function ensurePaymentForAppointment(params: {
+  appointmentId: string;
+  managerId: string;
+  clientId: string;
+  amount: number;
+}) {
+  const existingTotal = await prisma.payment.aggregate({
+    where: { appointmentId: params.appointmentId },
+    _sum: { amount: true }
+  });
+  const totalPaid = Number(existingTotal._sum.amount || 0);
+  if (totalPaid >= params.amount) return;
+
+  await prisma.payment.create({
+    data: {
+      managerId: params.managerId,
+      clientId: params.clientId,
+      appointmentId: params.appointmentId,
+      amount: params.amount - totalPaid,
+      method: PaymentMethod.CASH,
+      paymentDate: new Date(),
+      notes: "Auto-created from appointment marked as PAID"
+    }
   });
 }
 
@@ -93,6 +120,15 @@ export async function createAppointmentAction(formData: FormData) {
         notes: zRes.data.notes
       }
     });
+
+    if (zRes.data.paymentStatus === PaymentStatus.PAID) {
+      await ensurePaymentForAppointment({
+        appointmentId: appointment.id,
+        managerId: user.id,
+        clientId: zRes.data.clientId,
+        amount: Number(price)
+      });
+    }
 
     await logAudit({
       userId: user.id,
@@ -168,6 +204,15 @@ export async function updateAppointmentAction(formData: FormData) {
         notes: zRes.data.notes
       }
     });
+
+    if (zRes.data.paymentStatus === PaymentStatus.PAID) {
+      await ensurePaymentForAppointment({
+        appointmentId: id,
+        managerId: user.id,
+        clientId: zRes.data.clientId,
+        amount: Number(price)
+      });
+    }
 
     await logAudit({
       userId: user.id,
