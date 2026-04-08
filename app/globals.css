@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "./themes.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -61,51 +62,19 @@
 }
 
 :root {
-  /* --radius: 0.625rem; */
-  --dark: oklch(0.26 0 0);
-  --dark-foreground: oklch(1 0 0);
-}
-
-:root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.15 0 0);
-  /* --card: oklch(1 0 0); */
-  /* --card-foreground: oklch(0.15 0 0); */
-  --popover: oklch(0.97 0 0);
-  --popover-foreground: oklch(0.54 0 0);
-  --primary: oklch(0.55 0.23 295.48);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.54 0 0);
-  --tertiary: oklch(0.95 0 0);
-  --hover: oklch(0.92 0 0);
-  --accent: oklch(1 0 0);
-  --accent-foreground: oklch(0.55 0.23 295.48);
-  --destructive: oklch(0.58 0.24 27.33);
-  --border: oklch(0.92 0 0);
-  --input: oklch(1 0 0);
-  --ring: oklch(0.72 0.18 295.48);
-}
-
-.dark {
-  --background: oklch(0.16 0 0);
-  --foreground: oklch(0.97 0 0);
-  --card: oklch(0.22 0 0);
-  --card-foreground: oklch(0.98 0 0);
-  --popover: oklch(0.22 0 0);
-  --popover-foreground: oklch(0.98 0 0);
-  --primary: oklch(0.92 0 0);
-  --primary-foreground: oklch(0.22 0 0);
-  --secondary: oklch(0.28 0 0);
-  --secondary-foreground: oklch(0.98 0 0);
-  --tertiary: oklch(0.94 0 0);
-  --hover: oklch(0.31 0 0);
-  --accent: oklch(0.28 0 0);
-  --accent-foreground: oklch(0.98 0 0);
-  --destructive: oklch(0.66 0.18 25);
-  --border: oklch(1 0 0 / 16%);
-  --input: oklch(1 0 0 / 22%);
-  --ring: oklch(0.68 0.16 295.48);
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text-muted);
+  --primary-foreground: #ffffff;
+  --secondary-foreground: var(--text);
+  --tertiary: var(--hover);
+  --accent: var(--surface);
+  --accent-foreground: var(--primary);
+  --destructive: #ef4444;
+  --input: var(--surface);
 }
 
 @layer base {
@@ -149,11 +118,24 @@
       background-color 180ms ease, color 180ms ease;
   }
 
+  input,
+  select,
+  textarea {
+    background-color: var(--surface);
+    color: var(--text);
+    border-color: var(--border);
+  }
+
+  select option {
+    background-color: var(--surface);
+    color: var(--text);
+  }
+
   input:focus,
   select:focus,
   textarea:focus {
-    border-color: color-mix(in oklab, var(--ring) 40%, white);
-    box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 25%, white);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--ring);
   }
 }
 
@@ -172,21 +154,85 @@
   @apply h-24 w-auto;
 }
 
-.dark .bg-white {
-  background-color: var(--card);
-  color: var(--card-foreground);
+.bg-white,
+.bg-background,
+.bg-white\/80,
+.bg-white\/70,
+.bg-muted\/40 {
+  background-color: var(--surface);
+  color: var(--text);
 }
 
-.dark .bg-white\/80 {
-  background-color: color-mix(in oklab, var(--card) 80%, transparent);
+.border,
+.border-border {
+  border-color: var(--border);
 }
 
-.dark .bg-white\/70 {
-  background-color: color-mix(in oklab, var(--card) 70%, transparent);
+.text-muted-foreground {
+  color: var(--text-muted);
 }
 
-.dark .bg-muted\/40 {
-  background-color: color-mix(in oklab, var(--secondary) 40%, transparent);
+.bg-primary {
+  background-color: var(--primary);
+}
+
+.text-primary {
+  color: var(--primary);
+}
+
+.bg-secondary {
+  background-color: var(--secondary);
+}
+
+.hover\:bg-muted:hover {
+  background-color: var(--hover);
+}
+
+.card {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.table-soft {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  background-color: var(--surface);
+}
+
+.table-soft thead {
+  background-color: var(--hover);
+}
+
+.table-soft tbody tr:hover {
+  background-color: var(--hover);
+}
+
+.input-soft {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: #ffffff;
+  border-radius: 12px;
+  padding: 0.6rem 1rem;
+  font-weight: 600;
+}
+
+.btn-outline {
+  border: 1px solid var(--border);
+  background-color: transparent;
+  color: var(--text);
+  border-radius: 12px;
+  padding: 0.6rem 1rem;
+  font-weight: 600;
 }
 /* .your-component .react-colorful__saturation {
   border-radius: 4px 4px 0 0;

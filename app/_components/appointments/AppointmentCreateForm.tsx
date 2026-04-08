@@ -109,7 +109,7 @@ export default function AppointmentCreateForm({
   return (
     <form
       action={createAppointmentAction}
-      className="rounded-2xl border bg-white p-4 shadow-sm"
+      className="w-full min-w-0 max-w-full rounded-2xl border bg-white p-4 shadow-sm"
     >
       <input type="hidden" name="csrfToken" value={csrfToken} />
       <input
@@ -219,7 +219,7 @@ export default function AppointmentCreateForm({
           <div className="text-xs font-medium text-muted-foreground">
             Available slots
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-1">
+          <div className="grid min-w-0 max-w-full grid-flow-col auto-cols-max grid-rows-2 gap-2 overflow-x-auto pb-1">
             {availability.map((slot) => (
               <button
                 key={slot.time}

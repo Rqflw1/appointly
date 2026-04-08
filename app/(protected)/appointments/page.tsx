@@ -65,29 +65,30 @@ async function Page({ user, searchParams }: PageProps) {
       <PageHeader
         title="Appointments"
         description="Plan and track meetings"
-        actions={
-          <AppointmentCreateForm
-            csrfToken={csrfToken}
-            clients={clients.map((client) => ({
-              id: client.id,
-              firstName: client.firstName,
-              lastName: client.lastName
-            }))}
-            services={services.map((service) => ({
-              id: service.id,
-              title: service.title,
-              price: String(service.price),
-              durationMinutes: service.durationMinutes
-            }))}
-            existingAppointments={availabilityAppointments.map((appt) => ({
-              startAt: appt.startAt.toISOString(),
-              durationMinutes: appt.durationMinutes
-            }))}
-            workdayStart={user.workdayStart || "08:00"}
-            workdayEnd={user.workdayEnd || "18:00"}
-          />
-        }
       />
+
+      <div className="min-w-0">
+        <AppointmentCreateForm
+          csrfToken={csrfToken}
+          clients={clients.map((client) => ({
+            id: client.id,
+            firstName: client.firstName,
+            lastName: client.lastName
+          }))}
+          services={services.map((service) => ({
+            id: service.id,
+            title: service.title,
+            price: String(service.price),
+            durationMinutes: service.durationMinutes
+          }))}
+          existingAppointments={availabilityAppointments.map((appt) => ({
+            startAt: appt.startAt.toISOString(),
+            durationMinutes: appt.durationMinutes
+          }))}
+          workdayStart={user.workdayStart || "08:00"}
+          workdayEnd={user.workdayEnd || "18:00"}
+        />
+      </div>
 
       <form className="rounded-2xl border bg-white p-4 shadow-sm">
         <div className="grid gap-3 md:grid-cols-[0.6fr_1fr_1fr_auto]">

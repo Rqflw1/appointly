@@ -15,7 +15,9 @@ export default function PageHeader({ title, description, actions }: ComponentPro
           <div className="mt-1 text-sm text-muted-foreground">{description}</div>
         ) : null}
       </div>
-      {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
+      {actions ? (
+        <div className="flex min-w-0 items-center gap-2">{actions}</div>
+      ) : null}
     </div>
   );
 }

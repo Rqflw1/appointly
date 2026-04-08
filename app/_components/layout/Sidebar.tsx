@@ -6,19 +6,30 @@ import { cn } from "@/app/_shadcn/lib/utils";
 import { UserRole } from "@/app/_prisma/enums";
 import { useContext } from "react";
 import { LocaleContext } from "@/app/_components/context/LocaleProvider";
+import {
+  LayoutGrid,
+  Users,
+  Briefcase,
+  CalendarDays,
+  Receipt,
+  BarChart3,
+  Bell,
+  UserRound,
+  ClipboardList
+} from "lucide-react";
 
 const nav = [
-  { href: "/dashboard", labelKey: "dashboard", label: "Dashboard" },
-  { href: "/clients", labelKey: "clients", label: "Clients" },
-  { href: "/services", labelKey: "services", label: "Services" },
-  { href: "/appointments", labelKey: "appointments", label: "Appointments" },
-  { href: "/calendar", labelKey: "calendar", label: "Calendar" },
-  { href: "/payments", labelKey: "payments", label: "Payments" },
-  { href: "/reports", labelKey: "reports", label: "Reports" },
-  { href: "/reminders", labelKey: "reminders", label: "Reminders" },
-  { href: "/users", labelKey: "users", label: "Users", role: UserRole.ADMIN },
-  { href: "/audit-log", labelKey: "auditLog", label: "Audit log", role: UserRole.ADMIN },
-  { href: "/profile", labelKey: "profile", label: "Profile" }
+  { href: "/dashboard", labelKey: "dashboard", label: "Dashboard", icon: LayoutGrid },
+  { href: "/clients", labelKey: "clients", label: "Clients", icon: Users },
+  { href: "/services", labelKey: "services", label: "Services", icon: Briefcase },
+  { href: "/appointments", labelKey: "appointments", label: "Appointments", icon: CalendarDays },
+  { href: "/calendar", labelKey: "calendar", label: "Calendar", icon: CalendarDays },
+  { href: "/payments", labelKey: "payments", label: "Payments", icon: Receipt },
+  { href: "/reports", labelKey: "reports", label: "Reports", icon: BarChart3 },
+  { href: "/reminders", labelKey: "reminders", label: "Reminders", icon: Bell },
+  { href: "/users", labelKey: "users", label: "Users", role: UserRole.ADMIN, icon: Users },
+  { href: "/audit-log", labelKey: "auditLog", label: "Audit log", role: UserRole.ADMIN, icon: ClipboardList },
+  { href: "/profile", labelKey: "profile", label: "Profile", icon: UserRound }
 ];
 
 interface ComponentProps {
@@ -44,17 +55,19 @@ export default function Sidebar({ role }: ComponentProps) {
           const label =
             (dict.labels as any)[item.labelKey as keyof typeof dict.labels] ||
             item.label;
+          const Icon = item.icon;
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "block rounded-md px-3 py-2 text-sm font-medium transition",
+                "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition",
                 active
                   ? "bg-primary text-primary-foreground"
                   : "text-foreground/80 hover:bg-muted"
               )}
             >
+              <Icon size={16} />
               {label}
             </Link>
           );
