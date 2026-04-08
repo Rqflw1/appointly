@@ -1,0 +1,15 @@
+# Ignore dependencies and build output
+node_modules/
+.next/
+
+# Ignore local development files
+.git/
+.gitignore
+.vscode/
+
+# Ignore Docker-related files (to avoid copying unnecessary configs)
+*Dockerfile*
+.dockerignore
+compose.yml
+
+postgres/

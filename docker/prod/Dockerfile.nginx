@@ -1,0 +1,4 @@
+FROM nginx:1-alpine
+
+COPY ./nginx/prod/nginx.conf /etc/nginx
+COPY ./nginx/prod/conf.d/* /etc/nginx/conf.d

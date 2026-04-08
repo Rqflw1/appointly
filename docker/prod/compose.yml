@@ -1,0 +1,45 @@
+name: erekini
+services:
+  erekini-acme:
+    build:
+      context: ../../
+      dockerfile: docker/prod/Dockerfile.acme
+    image: erekini-acme
+    container_name: erekini-acme
+    tty: true
+    restart: always
+    volumes:
+      - /app/acme-challenge:/acme-challenge
+      - /app/acme-certificates:/acme.sh/einvoices.telegroup.lv
+      - /var/run/docker.sock:/var/run/docker.sock
+  erekini-nginx:
+    build:
+      context: ../../
+      dockerfile: docker/prod/Dockerfile.nginx
+    image: erekini-nginx
+    container_name: erekini-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /app/acme-challenge:/acme-challenge
+      - /app/acme-certificates:/acme-certificates
+  erekini-nextjs:
+    build:
+      context: ../../
+      dockerfile: docker/prod/Dockerfile.nextjs
+    image: erekini-nextjs
+    container_name: erekini-nextjs
+    restart: always
+    ports:
+      - "3000:3000"
+  erekini-postgres:
+    image: postgres:16-alpine
+    container_name: erekini-postgres
+    env_file: ../../.env.prod.local
+    restart: always
+    ports:
+      - "5432:5432"
+    volumes:
+      - /app/postgres:/var/lib/postgresql/data

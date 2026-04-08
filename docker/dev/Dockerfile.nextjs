@@ -1,0 +1,15 @@
+# Required in Alpine. See link
+# https://github.com/nodejs/docker-node/tree/89b29ef06b421598ec007605a2604ede0348b298?tab=readme-ov-file#nodealpine
+FROM node:24-alpine AS base-image
+RUN apk add --no-cache gcompat
+
+FROM base-image
+# Required for Prisma to work with Alpine
+# RUN apk add --no-cache openssl
+WORKDIR /app
+COPY package.json ./
+RUN npm i
+COPY . .
+RUN npx prisma generate
+
+CMD ["npm", "run", "dev"]

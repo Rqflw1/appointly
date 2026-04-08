@@ -1,0 +1,8 @@
+FROM neilpang/acme.sh
+
+RUN apk add --no-cache docker-cli
+
+COPY ./docker/stage-1/entrypoint.acme.sh /
+RUN chmod +x /entrypoint.acme.sh
+
+ENTRYPOINT ["/entrypoint.acme.sh"]

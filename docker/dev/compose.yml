@@ -1,0 +1,23 @@
+name: erekini
+services:
+  erekini-nextjs:
+    build:
+      context: ../../
+      dockerfile: docker/dev/Dockerfile.nextjs
+    image: erekini-nextjs
+    container_name: erekini-nextjs
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../../:/app
+      - /app/node_modules
+  erekini-postgres:
+    image: postgres:16-alpine
+    container_name: erekini-postgres
+    env_file: ../../.env.dev.local
+    restart: always
+    ports:
+      - "5432:5432"
+    volumes:
+      - ../../postgres:/var/lib/postgresql/data
