@@ -13,6 +13,7 @@ import {
 export const NEXT_PUBLIC_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "";
 
 export const DEFAULT_LANGUAGE = Language.EN;
+export const DEFAULT_TIMEZONE = process.env.APP_TIMEZONE || "Europe/Moscow";
 
 export const LOCALE = {
   [Language.EN]: "en-US",

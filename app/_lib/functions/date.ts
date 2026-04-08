@@ -18,3 +18,27 @@ export function startOfWeek(date: Date) {
   start.setHours(0, 0, 0, 0);
   return start;
 }
+
+import { DEFAULT_TIMEZONE } from "@/app/_lib/constants/general";
+
+export function formatDate(date: Date, locale: string, timeZone = DEFAULT_TIMEZONE) {
+  return new Intl.DateTimeFormat(locale, {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    timeZone
+  }).format(date);
+}
+
+export function formatTime(date: Date, locale: string, timeZone = DEFAULT_TIMEZONE) {
+  return new Intl.DateTimeFormat(locale, {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone
+  }).format(date);
+}
+
+export function formatDateTime(date: Date, locale: string, timeZone = DEFAULT_TIMEZONE) {
+  return `${formatDate(date, locale, timeZone)} ${formatTime(date, locale, timeZone)}`;
+}

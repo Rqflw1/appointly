@@ -7,7 +7,7 @@ import { getSessionAndUser } from "../serverFunctions/auth";
 import { scopeId } from "../serverFunctions/rbac";
 import { logAudit } from "../serverFunctions/audit";
 import { verifyCsrfToken } from "../serverFunctions/csrf";
-import { ReminderStatus } from "@/app/_prisma/enums";
+import { ReminderStatus, PaymentStatus } from "@/app/_prisma/enums";
 import { revalidatePath } from "next/cache";
 
 export async function createReminderAction(formData: FormData) {
@@ -80,10 +80,25 @@ export async function markReminderSentAction(formData: FormData) {
     if (!existing) return getResult(false, 404, null);
     if (!scopeId(user, existing.managerId)) return getResult(false, 403, null);
 
-    await prisma.reminder.update({
+    const updated = await prisma.reminder.update({
       where: { id },
       data: { status: ReminderStatus.SENT }
     });
+
+    if (updated.appointmentId) {
+      await prisma.appointment.update({
+        where: { id: updated.appointmentId },
+        data: { paymentStatus: PaymentStatus.PAID }
+      });
+
+      await prisma.reminder.delete({
+        where: { id }
+      });
+    } else {
+      await prisma.reminder.delete({
+        where: { id }
+      });
+    }
 
     await logAudit({
       userId: user.id,
@@ -94,6 +109,11 @@ export async function markReminderSentAction(formData: FormData) {
     });
 
     revalidatePath("/reminders");
+    revalidatePath("/dashboard");
+    revalidatePath("/reminders");
+    revalidatePath("/appointments");
+    revalidatePath("/payments");
+    revalidatePath("/reports");
     revalidatePath("/dashboard");
     return getResult(true, 200, id);
   } catch {

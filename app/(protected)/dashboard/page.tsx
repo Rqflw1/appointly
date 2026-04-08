@@ -7,6 +7,8 @@ import PageHeader from "@/app/_components/ui/PageHeader";
 import { formatNumber, getDictionary } from "@/app/_lib/functions/general";
 import { getActiveLanguage } from "@/app/_lib/serverFunctions/locale";
 import { syncDebtRemindersForUser } from "@/app/_lib/serverFunctions/reminders";
+import { LOCALE } from "@/app/_lib/constants/general";
+import { formatDateTime, formatDate } from "@/app/_lib/functions/date";
 
 interface ComponentProps {
   user: User;
@@ -16,6 +18,7 @@ export default protectedRoute(Page);
 async function Page({ user }: ComponentProps) {
   const language = await getActiveLanguage(user.language);
   const dict = getDictionary(language);
+  const locale = LOCALE[language];
   await syncDebtRemindersForUser(user);
   const stats = await getDashboardStats(user);
   const incomeMap = new Map<string, number>();
@@ -85,7 +88,7 @@ async function Page({ user }: ComponentProps) {
                     </div>
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {item.startAt.toLocaleString()}
+                    {formatDateTime(item.startAt, locale)}
                   </div>
                 </div>
               ))
@@ -113,7 +116,7 @@ async function Page({ user }: ComponentProps) {
                     </div>
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {item.startAt.toLocaleDateString()}
+                    {formatDate(item.startAt, locale)}
                   </div>
                 </div>
               ))
@@ -141,7 +144,7 @@ async function Page({ user }: ComponentProps) {
                   </div>
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {log.createdAt.toLocaleString()}
+                  {formatDateTime(log.createdAt, locale)}
                 </div>
               </div>
             ))

@@ -17,7 +17,7 @@ export async function createClientAction(formData: FormData) {
 
     const data = {
       firstName: String(formData.get("firstName") || ""),
-      lastName: String(formData.get("lastName") || ""),
+      lastName: formData.get("lastName")?.toString() ?? "",
       phone: formData.get("phone")?.toString() ?? "",
       email: formData.get("email")?.toString() ?? "",
       notes: String(formData.get("notes") || "")
@@ -58,7 +58,7 @@ export async function updateClientAction(formData: FormData) {
     const id = String(formData.get("id") || "");
     const data = {
       firstName: String(formData.get("firstName") || ""),
-      lastName: String(formData.get("lastName") || ""),
+      lastName: formData.get("lastName")?.toString() ?? "",
       phone: formData.get("phone")?.toString() ?? "",
       email: formData.get("email")?.toString() ?? "",
       notes: String(formData.get("notes") || "")

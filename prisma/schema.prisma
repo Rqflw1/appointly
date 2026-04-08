@@ -63,6 +63,8 @@ model User {
   password String
   role     UserRole @default(MANAGER)
   language Language @default(EN)
+  workdayStart String @default("08:00")
+  workdayEnd   String @default("18:00")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -79,7 +81,7 @@ model Client {
   id        String   @id @default(uuid())
   managerId String
   firstName String
-  lastName  String
+  lastName  String?
   phone     String?
   email     String?
   notes     String

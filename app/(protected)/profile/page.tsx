@@ -34,6 +34,20 @@ async function Page({ user }: PageProps) {
               className="w-full rounded-md border px-3 py-2 text-sm"
               required
             />
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                name="workdayStart"
+                type="time"
+                defaultValue={user.workdayStart || "08:00"}
+                className="w-full rounded-md border px-3 py-2 text-sm"
+              />
+              <input
+                name="workdayEnd"
+                type="time"
+                defaultValue={user.workdayEnd || "18:00"}
+                className="w-full rounded-md border px-3 py-2 text-sm"
+              />
+            </div>
             <button
               type="submit"
               className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"

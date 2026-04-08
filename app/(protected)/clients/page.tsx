@@ -53,7 +53,6 @@ async function Page({ user, searchParams }: PageProps) {
               <input
                 name="lastName"
                 placeholder="Last name"
-                required
                 className="rounded-md border px-3 py-2 text-sm"
               />
               <input

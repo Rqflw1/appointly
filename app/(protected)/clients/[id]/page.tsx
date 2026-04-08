@@ -66,7 +66,6 @@ async function Page({ user, params }: PageProps) {
               name="lastName"
               defaultValue={client.lastName}
               className="w-full rounded-md border px-3 py-2 text-sm"
-              required
             />
             <input
               name="phone"

@@ -12,6 +12,9 @@ import {
 import { ReminderStatus } from "@/app/_prisma/enums";
 import { cn } from "@/app/_shadcn/lib/utils";
 import { syncDebtRemindersForUser } from "@/app/_lib/serverFunctions/reminders";
+import { getActiveLanguage } from "@/app/_lib/serverFunctions/locale";
+import { LOCALE } from "@/app/_lib/constants/general";
+import { formatDateTime } from "@/app/_lib/functions/date";
 
 interface PageProps {
   user: User;
@@ -22,6 +25,8 @@ export default protectedRoute(Page);
 async function Page({ user, searchParams }: PageProps) {
   const csrfToken = await getCsrfToken();
   const scope = scopeWhere(user);
+  const language = await getActiveLanguage(user.language);
+  const locale = LOCALE[language];
 
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const from = resolvedSearchParams?.from
@@ -108,7 +113,7 @@ async function Page({ user, searchParams }: PageProps) {
                     </td>
                     <td className="px-4 py-3">{reminder.type}</td>
                     <td className="px-4 py-3">
-                      {reminder.remindAt.toLocaleString()}
+                      {formatDateTime(reminder.remindAt, locale)}
                     </td>
                     <td className="px-4 py-3">{reminder.status}</td>
                     <td className="px-4 py-3">{reminder.message}</td>

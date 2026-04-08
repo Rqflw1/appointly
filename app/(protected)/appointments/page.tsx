@@ -8,6 +8,9 @@ import EmptyState from "@/app/_components/ui/EmptyState";
 import { deleteAppointmentAction, updateAppointmentAction } from "@/app/_lib/serverActions/appointment";
 import { AppointmentStatus, PaymentStatus } from "@/app/_prisma/enums";
 import AppointmentCreateForm from "@/app/_components/appointments/AppointmentCreateForm";
+import { getActiveLanguage } from "@/app/_lib/serverFunctions/locale";
+import { LOCALE } from "@/app/_lib/constants/general";
+import { formatDateTime } from "@/app/_lib/functions/date";
 
 interface PageProps {
   user: User;
@@ -22,6 +25,8 @@ export default protectedRoute(Page);
 async function Page({ user, searchParams }: PageProps) {
   const csrfToken = await getCsrfToken();
   const scope = scopeWhere(user);
+  const language = await getActiveLanguage(user.language);
+  const locale = LOCALE[language];
 
   const resolvedSearchParams = (searchParams as any) ? await (searchParams as any) : undefined;
   const dateFilter = resolvedSearchParams?.date;
@@ -35,7 +40,8 @@ async function Page({ user, searchParams }: PageProps) {
       }
     : undefined;
 
-  const [appointments, clients, services] = await Promise.all([
+  const [appointments, clients, services, availabilityAppointments] =
+    await Promise.all([
     prisma.appointment.findMany({
       where: {
         ...scope,
@@ -47,7 +53,11 @@ async function Page({ user, searchParams }: PageProps) {
       orderBy: { startAt: "desc" }
     }),
     prisma.client.findMany({ where: { ...scope }, orderBy: { lastName: "asc" } }),
-    prisma.service.findMany({ where: { ...scope }, orderBy: { title: "asc" } })
+    prisma.service.findMany({ where: { ...scope }, orderBy: { title: "asc" } }),
+    prisma.appointment.findMany({
+      where: { ...scope },
+      select: { startAt: true, durationMinutes: true }
+    })
   ]);
 
   return (
@@ -69,6 +79,12 @@ async function Page({ user, searchParams }: PageProps) {
               price: String(service.price),
               durationMinutes: service.durationMinutes
             }))}
+            existingAppointments={availabilityAppointments.map((appt) => ({
+              startAt: appt.startAt.toISOString(),
+              durationMinutes: appt.durationMinutes
+            }))}
+            workdayStart={user.workdayStart || "08:00"}
+            workdayEnd={user.workdayEnd || "18:00"}
           />
         }
       />
@@ -125,7 +141,7 @@ async function Page({ user, searchParams }: PageProps) {
                   </td>
                   <td className="px-4 py-3">{appt.service.title}</td>
                   <td className="px-4 py-3">
-                    {appt.startAt.toLocaleString()}
+                    {formatDateTime(appt.startAt, locale)}
                   </td>
                   <td className="px-4 py-3">{appt.status}</td>
                   <td className="px-4 py-3">{appt.paymentStatus}</td>

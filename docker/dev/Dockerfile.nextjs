@@ -12,7 +12,4 @@ RUN npm i
 COPY . .
 RUN npx prisma generate
 
-COPY docker/dev/entrypoint.nextjs.sh ./
-RUN chmod +x entrypoint.nextjs.sh
-
-CMD ["./entrypoint.nextjs.sh"]
+CMD ["sh", "-lc", "/app/docker/dev/entrypoint.nextjs.sh"]

@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS users (
   password TEXT NOT NULL,
   role user_role NOT NULL DEFAULT 'MANAGER',
   language TEXT NOT NULL DEFAULT 'EN',
+  workday_start TEXT NOT NULL DEFAULT '08:00',
+  workday_end TEXT NOT NULL DEFAULT '18:00',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -35,7 +37,7 @@ CREATE TABLE IF NOT EXISTS clients (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   manager_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   first_name TEXT NOT NULL,
-  last_name TEXT NOT NULL,
+  last_name TEXT,
   phone TEXT,
   email TEXT,
   notes TEXT NOT NULL DEFAULT '',

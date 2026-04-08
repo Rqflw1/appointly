@@ -29,7 +29,9 @@ export const UpdateUserSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
   role: z.nativeEnum(UserRole),
-  language: z.nativeEnum(Language).optional()
+  language: z.nativeEnum(Language).optional(),
+  workdayStart: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  workdayEnd: z.string().regex(/^\d{2}:\d{2}$/).optional()
 });
 
 export const ChangePasswordSchema = z.object({

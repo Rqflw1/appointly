@@ -133,7 +133,9 @@ export async function updateProfileAction(formData: FormData) {
       name: String(formData.get("name") || ""),
       email: String(formData.get("email") || ""),
       role: user.role,
-      language: formData.get("language") || undefined
+      language: formData.get("language") || undefined,
+      workdayStart: String(formData.get("workdayStart") || ""),
+      workdayEnd: String(formData.get("workdayEnd") || "")
     };
     const zRes = UpdateUserSchema.safeParse(data);
     if (!zRes.success) return getResult(false, 400, null);
@@ -143,7 +145,9 @@ export async function updateProfileAction(formData: FormData) {
       data: {
         name: zRes.data.name,
         email: zRes.data.email,
-        language: (zRes.data.language as Language | undefined) ?? user.language
+        language: (zRes.data.language as Language | undefined) ?? user.language,
+        workdayStart: zRes.data.workdayStart || user.workdayStart,
+        workdayEnd: zRes.data.workdayEnd || user.workdayEnd
       }
     });
 

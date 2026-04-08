@@ -7,6 +7,8 @@ import EmptyState from "@/app/_components/ui/EmptyState";
 import CalendarDateForm from "@/app/_components/calendar/CalendarDateForm";
 import { getActiveLanguage } from "@/app/_lib/serverFunctions/locale";
 import { getDictionary } from "@/app/_lib/functions/general";
+import { LOCALE } from "@/app/_lib/constants/general";
+import { formatTime } from "@/app/_lib/functions/date";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +30,7 @@ async function Page({ user, searchParams }: PageProps) {
   const scope = scopeWhere(user);
   const language = await getActiveLanguage(user.language);
   const dict = getDictionary(language);
+  const locale = LOCALE[language];
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const normalizedFrom = normalizeDate(resolvedSearchParams?.from);
   const normalizedTo = normalizeDate(resolvedSearchParams?.to);
@@ -67,7 +70,7 @@ async function Page({ user, searchParams }: PageProps) {
                     {appt.service.title}
                   </div>
                 </div>
-                <div className="text-sm">{appt.startAt.toLocaleTimeString()}</div>
+                <div className="text-sm">{formatTime(appt.startAt, locale)}</div>
               </div>
             </div>
           ))}

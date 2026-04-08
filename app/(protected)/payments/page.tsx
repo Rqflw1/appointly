@@ -10,6 +10,9 @@ import {
   deletePaymentAction
 } from "@/app/_lib/serverActions/payment";
 import { PaymentMethod } from "@/app/_prisma/enums";
+import { getActiveLanguage } from "@/app/_lib/serverFunctions/locale";
+import { LOCALE } from "@/app/_lib/constants/general";
+import { formatDate } from "@/app/_lib/functions/date";
 
 interface PageProps {
   user: User;
@@ -24,6 +27,8 @@ export default protectedRoute(Page);
 async function Page({ user, searchParams }: PageProps) {
   const csrfToken = await getCsrfToken();
   const scope = scopeWhere(user);
+  const language = await getActiveLanguage(user.language);
+  const locale = LOCALE[language];
 
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const dateFilter = resolvedSearchParams?.date;
@@ -189,7 +194,7 @@ async function Page({ user, searchParams }: PageProps) {
                   <td className="px-4 py-3">${Number(payment.amount).toFixed(2)}</td>
                   <td className="px-4 py-3">{payment.method}</td>
                   <td className="px-4 py-3">
-                    {payment.paymentDate.toLocaleDateString()}
+                    {formatDate(payment.paymentDate, locale)}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <form action={deletePaymentAction}>
