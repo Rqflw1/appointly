@@ -10,7 +10,7 @@ import { getDictionary } from "@/app/_lib/functions/general";
 
 interface PageProps {
   user: User;
-  searchParams?: { from?: string; to?: string };
+  searchParams?: Promise<{ from?: string; to?: string }>;
 }
 
 export default protectedRoute(Page);
@@ -18,11 +18,12 @@ async function Page({ user, searchParams }: PageProps) {
   const scope = scopeWhere(user);
   const language = await getActiveLanguage(user.language);
   const dict = getDictionary(language);
-  const from = searchParams?.from
-    ? new Date(`${searchParams.from}T00:00:00`)
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const from = resolvedSearchParams?.from
+    ? new Date(`${resolvedSearchParams.from}T00:00:00`)
     : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-  const to = searchParams?.to
-    ? new Date(`${searchParams.to}T23:59:59`)
+  const to = resolvedSearchParams?.to
+    ? new Date(`${resolvedSearchParams.to}T23:59:59`)
     : new Date();
 
   const [payments, appointments, clientsCount, newClients, unpaidAppointments] =
@@ -131,13 +132,13 @@ async function Page({ user, searchParams }: PageProps) {
         <input
           name="from"
           type="date"
-          defaultValue={searchParams?.from || ""}
+          defaultValue={resolvedSearchParams?.from || ""}
           className="rounded-md border px-3 py-2 text-sm"
         />
         <input
           name="to"
           type="date"
-          defaultValue={searchParams?.to || ""}
+          defaultValue={resolvedSearchParams?.to || ""}
           className="rounded-md border px-3 py-2 text-sm"
         />
         <button type="submit" className="rounded-md border px-3 py-2 text-sm">

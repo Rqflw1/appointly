@@ -6,33 +6,46 @@ import { protectedRoute } from "@/app/_lib/serverFunctions/auth";
 import PageHeader from "@/app/_components/ui/PageHeader";
 import EmptyState from "@/app/_components/ui/EmptyState";
 import {
-  createReminderAction,
   deleteReminderAction,
   markReminderSentAction
 } from "@/app/_lib/serverActions/reminder";
-import { ReminderStatus, ReminderType } from "@/app/_prisma/enums";
+import { ReminderStatus } from "@/app/_prisma/enums";
 import { cn } from "@/app/_shadcn/lib/utils";
+import { syncDebtRemindersForUser } from "@/app/_lib/serverFunctions/reminders";
 
 interface PageProps {
   user: User;
+  searchParams?: Promise<{ from?: string; to?: string }>;
 }
 
 export default protectedRoute(Page);
-async function Page({ user }: PageProps) {
+async function Page({ user, searchParams }: PageProps) {
   const csrfToken = await getCsrfToken();
   const scope = scopeWhere(user);
 
-  const [reminders, clients, appointments] = await Promise.all([
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const from = resolvedSearchParams?.from
+    ? new Date(`${resolvedSearchParams.from}T00:00:00`)
+    : undefined;
+  const to = resolvedSearchParams?.to
+    ? new Date(`${resolvedSearchParams.to}T23:59:59`)
+    : undefined;
+
+  const remindAtFilter =
+    from || to
+      ? {
+          gte: from || undefined,
+          lte: to || undefined
+        }
+      : undefined;
+
+  await syncDebtRemindersForUser(user);
+
+  const [reminders] = await Promise.all([
     prisma.reminder.findMany({
-      where: { ...scope },
+      where: { ...scope, remindAt: remindAtFilter },
       include: { client: true },
       orderBy: { remindAt: "asc" }
-    }),
-    prisma.client.findMany({ where: { ...scope }, orderBy: { lastName: "asc" } }),
-    prisma.appointment.findMany({
-      where: { ...scope },
-      include: { client: true },
-      orderBy: { startAt: "desc" }
     })
   ]);
 
@@ -43,53 +56,27 @@ async function Page({ user }: PageProps) {
       <PageHeader
         title="Reminders"
         description="Keep clients informed"
-        actions={
-          <form action={createReminderAction} className="flex flex-wrap gap-2">
-            <input type="hidden" name="csrfToken" value={csrfToken} />
-            <select name="clientId" required className="rounded-md border px-3 py-2 text-sm">
-              <option value="">Client</option>
-              {clients.map((client) => (
-                <option key={client.id} value={client.id}>
-                  {client.firstName} {client.lastName}
-                </option>
-              ))}
-            </select>
-            <select name="appointmentId" className="rounded-md border px-3 py-2 text-sm">
-              <option value="">Appointment (optional)</option>
-              {appointments.map((appt) => (
-                <option key={appt.id} value={appt.id}>
-                  {appt.client.firstName} {appt.client.lastName} · {new Date(appt.startAt).toLocaleDateString()}
-                </option>
-              ))}
-            </select>
-            <select name="type" className="rounded-md border px-3 py-2 text-sm">
-              {Object.values(ReminderType).map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
-            <input
-              name="remindAt"
-              type="datetime-local"
-              required
-              className="rounded-md border px-3 py-2 text-sm"
-            />
-            <input
-              name="message"
-              placeholder="Message"
-              required
-              className="w-64 rounded-md border px-3 py-2 text-sm"
-            />
-            <button
-              type="submit"
-              className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
-            >
-              Add
-            </button>
-          </form>
-        }
       />
+
+      <div className="flex flex-wrap items-center gap-2">
+        <form className="flex flex-wrap items-center gap-2">
+          <input
+            name="from"
+            type="date"
+          defaultValue={resolvedSearchParams?.from || ""}
+            className="rounded-md border px-3 py-2 text-sm"
+          />
+          <input
+            name="to"
+            type="date"
+          defaultValue={resolvedSearchParams?.to || ""}
+            className="rounded-md border px-3 py-2 text-sm"
+          />
+          <button type="submit" className="rounded-md border px-3 py-2 text-sm">
+            Filter
+          </button>
+        </form>
+      </div>
 
       {reminders.length === 0 ? (
         <EmptyState title="No reminders yet" />

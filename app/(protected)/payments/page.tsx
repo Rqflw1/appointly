@@ -13,11 +13,11 @@ import { PaymentMethod } from "@/app/_prisma/enums";
 
 interface PageProps {
   user: User;
-  searchParams?: {
+  searchParams?: Promise<{
     date?: string;
     clientId?: string;
     method?: PaymentMethod;
-  };
+  }>;
 }
 
 export default protectedRoute(Page);
@@ -25,9 +25,10 @@ async function Page({ user, searchParams }: PageProps) {
   const csrfToken = await getCsrfToken();
   const scope = scopeWhere(user);
 
-  const dateFilter = searchParams?.date;
-  const clientFilter = searchParams?.clientId;
-  const methodFilter = searchParams?.method;
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const dateFilter = resolvedSearchParams?.date;
+  const clientFilter = resolvedSearchParams?.clientId;
+  const methodFilter = resolvedSearchParams?.method;
 
   const dateRange = dateFilter
     ? {

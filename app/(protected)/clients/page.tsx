@@ -10,12 +10,13 @@ import { createClientAction, deleteClientAction } from "@/app/_lib/serverActions
 
 interface PageProps {
   user: User;
-  searchParams?: { q?: string };
+  searchParams?: Promise<{ q?: string }>;
 }
 
 export default protectedRoute(Page);
 async function Page({ user, searchParams }: PageProps) {
-  const q = searchParams?.q?.trim() || "";
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const q = resolvedSearchParams?.q?.trim() || "";
   const csrfToken = await getCsrfToken();
   const scope = scopeWhere(user);
 

@@ -6,6 +6,7 @@ import IncomeChart from "@/app/_components/dashboard/IncomeChart";
 import PageHeader from "@/app/_components/ui/PageHeader";
 import { formatNumber, getDictionary } from "@/app/_lib/functions/general";
 import { getActiveLanguage } from "@/app/_lib/serverFunctions/locale";
+import { syncDebtRemindersForUser } from "@/app/_lib/serverFunctions/reminders";
 
 interface ComponentProps {
   user: User;
@@ -15,6 +16,7 @@ export default protectedRoute(Page);
 async function Page({ user }: ComponentProps) {
   const language = await getActiveLanguage(user.language);
   const dict = getDictionary(language);
+  await syncDebtRemindersForUser(user);
   const stats = await getDashboardStats(user);
   const incomeMap = new Map<string, number>();
 

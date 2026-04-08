@@ -72,6 +72,49 @@ async function removePaymentsForAppointment(appointmentId: string) {
   await prisma.payment.deleteMany({ where: { appointmentId } });
 }
 
+async function ensureDebtReminder(params: {
+  appointmentId: string;
+  managerId: string;
+  clientId: string;
+  amount: number;
+  startAt: Date;
+}) {
+  const existing = await prisma.reminder.findFirst({
+    where: {
+      appointmentId: params.appointmentId,
+      type: "DEBT",
+      status: "PENDING"
+    }
+  });
+  const remindAt = new Date(params.startAt.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const message = `Unpaid balance: $${params.amount.toFixed(2)}`;
+  if (existing) {
+    await prisma.reminder.update({
+      where: { id: existing.id },
+      data: { remindAt, message, clientId: params.clientId }
+    });
+    return;
+  }
+
+  await prisma.reminder.create({
+    data: {
+      managerId: params.managerId,
+      clientId: params.clientId,
+      appointmentId: params.appointmentId,
+      type: "DEBT",
+      remindAt,
+      status: "PENDING",
+      message
+    }
+  });
+}
+
+async function removeDebtReminder(appointmentId: string) {
+  await prisma.reminder.deleteMany({
+    where: { appointmentId, type: "DEBT", status: "PENDING" }
+  });
+}
+
 export async function createAppointmentAction(formData: FormData) {
   try {
     await verifyCsrfToken(formData);
@@ -131,6 +174,18 @@ export async function createAppointmentAction(formData: FormData) {
         managerId: user.id,
         clientId: zRes.data.clientId,
         amount: Number(price)
+      });
+    }
+    if (
+      zRes.data.paymentStatus === PaymentStatus.UNPAID ||
+      zRes.data.paymentStatus === PaymentStatus.PARTIALLY_PAID
+    ) {
+      await ensureDebtReminder({
+        appointmentId: appointment.id,
+        managerId: user.id,
+        clientId: zRes.data.clientId,
+        amount: Number(price),
+        startAt
       });
     }
 
@@ -219,6 +274,21 @@ export async function updateAppointmentAction(formData: FormData) {
     }
     if (zRes.data.paymentStatus === PaymentStatus.UNPAID) {
       await removePaymentsForAppointment(id);
+    }
+    if (zRes.data.paymentStatus === PaymentStatus.PAID) {
+      await removeDebtReminder(id);
+    }
+    if (
+      zRes.data.paymentStatus === PaymentStatus.UNPAID ||
+      zRes.data.paymentStatus === PaymentStatus.PARTIALLY_PAID
+    ) {
+      await ensureDebtReminder({
+        appointmentId: id,
+        managerId: user.id,
+        clientId: zRes.data.clientId,
+        amount: Number(price),
+        startAt
+      });
     }
 
     await logAudit({

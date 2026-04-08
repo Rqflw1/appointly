@@ -23,9 +23,10 @@ async function Page({ user, searchParams }: PageProps) {
   const csrfToken = await getCsrfToken();
   const scope = scopeWhere(user);
 
-  const dateFilter = searchParams?.date;
-  const statusFilter = searchParams?.status;
-  const paymentFilter = searchParams?.paymentStatus;
+  const resolvedSearchParams = (searchParams as any) ? await (searchParams as any) : undefined;
+  const dateFilter = resolvedSearchParams?.date;
+  const statusFilter = resolvedSearchParams?.status;
+  const paymentFilter = resolvedSearchParams?.paymentStatus;
 
   const dateRange = dateFilter
     ? {
@@ -146,7 +147,7 @@ async function Page({ user, searchParams }: PageProps) {
                           name="durationMinutes"
                           value={appt.durationMinutes}
                         />
-                        <input type="hidden" name="price" value={appt.price} />
+        <input type="hidden" name="price" value={Number(appt.price)} />
                         <input type="hidden" name="notes" value={appt.notes} />
                         <select
                           name="status"
