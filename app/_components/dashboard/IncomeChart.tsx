@@ -16,12 +16,15 @@ interface ChartPoint {
 
 interface ComponentProps {
   data: ChartPoint[];
+  title?: string;
 }
 
-export default function IncomeChart({ data }: ComponentProps) {
+export default function IncomeChart({ data, title }: ComponentProps) {
   return (
     <div className="rounded-xl border bg-white p-4">
-      <div className="mb-4 text-sm font-medium">Income (last 7 days)</div>
+      <div className="mb-4 text-sm font-medium">
+        {title || "Income (last 7 days)"}
+      </div>
       <div className="h-56">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>

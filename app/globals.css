@@ -84,28 +84,28 @@
   --destructive: oklch(0.58 0.24 27.33);
   --border: oklch(0.92 0 0);
   --input: oklch(1 0 0);
-  /* --ring: oklch(0.7 0 0); */
+  --ring: oklch(0.72 0.18 295.48);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  /* --card: oklch(0.205 0 0); */
-  /* --card-foreground: oklch(0.985 0 0); */
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --tertiary: oklch(0.95 0 0);
-  --hover: oklch(0.305 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  /* --ring: oklch(0.556 0 0); */
+  --background: oklch(0.16 0 0);
+  --foreground: oklch(0.97 0 0);
+  --card: oklch(0.22 0 0);
+  --card-foreground: oklch(0.98 0 0);
+  --popover: oklch(0.22 0 0);
+  --popover-foreground: oklch(0.98 0 0);
+  --primary: oklch(0.92 0 0);
+  --primary-foreground: oklch(0.22 0 0);
+  --secondary: oklch(0.28 0 0);
+  --secondary-foreground: oklch(0.98 0 0);
+  --tertiary: oklch(0.94 0 0);
+  --hover: oklch(0.31 0 0);
+  --accent: oklch(0.28 0 0);
+  --accent-foreground: oklch(0.98 0 0);
+  --destructive: oklch(0.66 0.18 25);
+  --border: oklch(1 0 0 / 16%);
+  --input: oklch(1 0 0 / 22%);
+  --ring: oklch(0.68 0.16 295.48);
 }
 
 @layer base {
@@ -118,6 +118,42 @@
   }
   body {
     @apply h-full bg-background text-foreground;
+  }
+
+  button {
+    transition: transform 120ms ease, box-shadow 180ms ease,
+      background-color 180ms ease, color 180ms ease, border-color 180ms ease,
+      opacity 180ms ease;
+  }
+
+  button:not(:disabled):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px -10px rgba(0, 0, 0, 0.5);
+  }
+
+  button:not(:disabled):active {
+    transform: translateY(0);
+    box-shadow: 0 4px 10px -12px rgba(0, 0, 0, 0.6);
+  }
+
+  button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  a,
+  input,
+  select,
+  textarea {
+    transition: border-color 180ms ease, box-shadow 180ms ease,
+      background-color 180ms ease, color 180ms ease;
+  }
+
+  input:focus,
+  select:focus,
+  textarea:focus {
+    border-color: color-mix(in oklab, var(--ring) 40%, white);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 25%, white);
   }
 }
 
@@ -134,6 +170,23 @@
 
 .logo-color-picker .react-colorful {
   @apply h-24 w-auto;
+}
+
+.dark .bg-white {
+  background-color: var(--card);
+  color: var(--card-foreground);
+}
+
+.dark .bg-white\/80 {
+  background-color: color-mix(in oklab, var(--card) 80%, transparent);
+}
+
+.dark .bg-white\/70 {
+  background-color: color-mix(in oklab, var(--card) 70%, transparent);
+}
+
+.dark .bg-muted\/40 {
+  background-color: color-mix(in oklab, var(--secondary) 40%, transparent);
 }
 /* .your-component .react-colorful__saturation {
   border-radius: 4px 4px 0 0;

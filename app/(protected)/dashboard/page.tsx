@@ -4,7 +4,8 @@ import { User } from "@/app/_prisma/client";
 import StatCard from "@/app/_components/ui/StatCard";
 import IncomeChart from "@/app/_components/dashboard/IncomeChart";
 import PageHeader from "@/app/_components/ui/PageHeader";
-import { formatNumber } from "@/app/_lib/functions/general";
+import { formatNumber, getDictionary } from "@/app/_lib/functions/general";
+import { getActiveLanguage } from "@/app/_lib/serverFunctions/locale";
 
 interface ComponentProps {
   user: User;
@@ -12,6 +13,8 @@ interface ComponentProps {
 
 export default protectedRoute(Page);
 async function Page({ user }: ComponentProps) {
+  const language = await getActiveLanguage(user.language);
+  const dict = getDictionary(language);
   const stats = await getDashboardStats(user);
   const incomeMap = new Map<string, number>();
 
@@ -33,31 +36,41 @@ async function Page({ user }: ComponentProps) {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Dashboard"
-        description="Quick overview of your business"
+        title={dict.labels.dashboard}
+        description={dict.labels.dashboardDesc}
       />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <StatCard title="Total clients" value={stats.clientsCount} />
-        <StatCard title="Appointments today" value={stats.todayAppointments} />
-        <StatCard title="Unpaid appointments" value={stats.unpaidAppointments} />
+        <StatCard title={dict.labels.totalClients} value={stats.clientsCount} />
         <StatCard
-          title="Income this month"
+          title={dict.labels.appointmentsToday}
+          value={stats.todayAppointments}
+        />
+        <StatCard
+          title={dict.labels.unpaidAppointments}
+          value={stats.unpaidAppointments}
+        />
+        <StatCard
+          title={dict.labels.incomeThisMonth}
           value={`$${formatNumber(Number(stats.monthIncome))}`}
         />
         <StatCard
-          title="Income today"
+          title={dict.labels.incomeToday}
           value={`$${formatNumber(Number(stats.todayIncome))}`}
         />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <IncomeChart data={last7} />
+        <IncomeChart data={last7} title={dict.labels.incomeLast7Days} />
         <div className="rounded-xl border bg-white p-4">
-          <div className="mb-3 text-sm font-medium">Upcoming appointments</div>
+          <div className="mb-3 text-sm font-medium">
+            {dict.labels.upcomingAppointments}
+          </div>
           <div className="space-y-2">
             {stats.upcomingAppointments.length === 0 ? (
-              <div className="text-sm text-muted-foreground">No upcoming</div>
+              <div className="text-sm text-muted-foreground">
+                {dict.labels.upcoming}
+              </div>
             ) : (
               stats.upcomingAppointments.map((item) => (
                 <div key={item.id} className="flex items-center justify-between">
@@ -78,10 +91,14 @@ async function Page({ user }: ComponentProps) {
           </div>
         </div>
         <div className="rounded-xl border bg-white p-4">
-          <div className="mb-3 text-sm font-medium">Overdue payments</div>
+          <div className="mb-3 text-sm font-medium">
+            {dict.labels.overduePayments}
+          </div>
           <div className="space-y-2">
             {stats.overduePayments.length === 0 ? (
-              <div className="text-sm text-muted-foreground">No overdue</div>
+              <div className="text-sm text-muted-foreground">
+                {dict.labels.noOverdue}
+              </div>
             ) : (
               stats.overduePayments.map((item) => (
                 <div key={item.id} className="flex items-center justify-between">
@@ -104,10 +121,14 @@ async function Page({ user }: ComponentProps) {
       </div>
 
       <div className="rounded-xl border bg-white p-4">
-        <div className="mb-3 text-sm font-medium">Recent activity</div>
+        <div className="mb-3 text-sm font-medium">
+          {dict.labels.recentActivity}
+        </div>
         <div className="space-y-2">
           {stats.auditLogs.length === 0 ? (
-            <div className="text-sm text-muted-foreground">No recent activity</div>
+            <div className="text-sm text-muted-foreground">
+              {dict.empty.audit}
+            </div>
           ) : (
             stats.auditLogs.map((log) => (
               <div key={log.id} className="flex items-center justify-between">

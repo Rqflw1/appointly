@@ -4,19 +4,21 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/app/_shadcn/lib/utils";
 import { UserRole } from "@/app/_prisma/enums";
+import { useContext } from "react";
+import { LocaleContext } from "@/app/_components/context/LocaleProvider";
 
 const nav = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/clients", label: "Clients" },
-  { href: "/services", label: "Services" },
-  { href: "/appointments", label: "Appointments" },
-  { href: "/calendar", label: "Calendar" },
-  { href: "/payments", label: "Payments" },
-  { href: "/reports", label: "Reports" },
-  { href: "/reminders", label: "Reminders" },
-  { href: "/users", label: "Users", role: UserRole.ADMIN },
-  { href: "/audit-log", label: "Audit log", role: UserRole.ADMIN },
-  { href: "/profile", label: "Profile" }
+  { href: "/dashboard", labelKey: "dashboard", label: "Dashboard" },
+  { href: "/clients", labelKey: "clients", label: "Clients" },
+  { href: "/services", labelKey: "services", label: "Services" },
+  { href: "/appointments", labelKey: "appointments", label: "Appointments" },
+  { href: "/calendar", labelKey: "calendar", label: "Calendar" },
+  { href: "/payments", labelKey: "payments", label: "Payments" },
+  { href: "/reports", labelKey: "reports", label: "Reports" },
+  { href: "/reminders", labelKey: "reminders", label: "Reminders" },
+  { href: "/users", labelKey: "users", label: "Users", role: UserRole.ADMIN },
+  { href: "/audit-log", labelKey: "auditLog", label: "Audit log", role: UserRole.ADMIN },
+  { href: "/profile", labelKey: "profile", label: "Profile" }
 ];
 
 interface ComponentProps {
@@ -25,10 +27,11 @@ interface ComponentProps {
 
 export default function Sidebar({ role }: ComponentProps) {
   const pathname = usePathname();
+  const { dict } = useContext(LocaleContext);
 
   return (
-    <aside className="w-64 shrink-0 border-r bg-white/70 backdrop-blur">
-      <div className="px-6 py-5 border-b">
+    <aside className="w-64 shrink-0 border-r border-border bg-background/80 backdrop-blur">
+      <div className="border-b border-border px-6 py-5">
         <div className="text-lg font-semibold">Mini CRM</div>
         <div className="text-xs text-muted-foreground">Billing & Scheduling</div>
       </div>
@@ -38,6 +41,9 @@ export default function Sidebar({ role }: ComponentProps) {
           .map((item) => {
           const active =
             pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const label =
+            (dict.labels as any)[item.labelKey as keyof typeof dict.labels] ||
+            item.label;
           return (
             <Link
               key={item.href}
@@ -49,7 +55,7 @@ export default function Sidebar({ role }: ComponentProps) {
                   : "text-foreground/80 hover:bg-muted"
               )}
             >
-              {item.label}
+              {label}
             </Link>
           );
         })}

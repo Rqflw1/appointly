@@ -1,11 +1,13 @@
 import { Result } from "../types/general";
 import en from "../dictionaries/en";
 import ru from "../dictionaries/ru";
+import lv from "../dictionaries/lv";
 import { memo } from "react";
 import { Language } from "@/app/_prisma/enums";
 
 export function getDictionary(language: Language) {
   if (language === Language.RU) return ru;
+  if (language === Language.LV) return lv;
   return en;
 }
 

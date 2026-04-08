@@ -68,6 +68,10 @@ async function ensurePaymentForAppointment(params: {
   });
 }
 
+async function removePaymentsForAppointment(appointmentId: string) {
+  await prisma.payment.deleteMany({ where: { appointmentId } });
+}
+
 export async function createAppointmentAction(formData: FormData) {
   try {
     await verifyCsrfToken(formData);
@@ -212,6 +216,9 @@ export async function updateAppointmentAction(formData: FormData) {
         clientId: zRes.data.clientId,
         amount: Number(price)
       });
+    }
+    if (zRes.data.paymentStatus === PaymentStatus.UNPAID) {
+      await removePaymentsForAppointment(id);
     }
 
     await logAudit({

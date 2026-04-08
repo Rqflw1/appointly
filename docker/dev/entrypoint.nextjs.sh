@@ -8,6 +8,9 @@ if [ -f .env.dev.local ]; then
 fi
 
 if [ -n "$DATABASE_URL" ]; then
+  echo "Generating Prisma client..."
+  npx prisma generate
+
   echo "Waiting for database..."
   until node -e "const { Client } = require('pg'); const c = new Client({ connectionString: process.env.DATABASE_URL }); c.connect().then(() => c.end()).catch(() => process.exit(1));"; do
     sleep 1

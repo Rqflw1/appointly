@@ -4,7 +4,9 @@ import { User } from "@/app/_prisma/client";
 import { protectedRoute } from "@/app/_lib/serverFunctions/auth";
 import PageHeader from "@/app/_components/ui/PageHeader";
 import ReportsCharts from "@/app/_components/reports/ReportsCharts";
-import { AppointmentStatus, PaymentMethod } from "@/app/_prisma/enums";
+import { AppointmentStatus, PaymentMethod, PaymentStatus } from "@/app/_prisma/enums";
+import { getActiveLanguage } from "@/app/_lib/serverFunctions/locale";
+import { getDictionary } from "@/app/_lib/functions/general";
 
 interface PageProps {
   user: User;
@@ -14,6 +16,8 @@ interface PageProps {
 export default protectedRoute(Page);
 async function Page({ user, searchParams }: PageProps) {
   const scope = scopeWhere(user);
+  const language = await getActiveLanguage(user.language);
+  const dict = getDictionary(language);
   const from = searchParams?.from
     ? new Date(`${searchParams.from}T00:00:00`)
     : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
@@ -21,7 +25,8 @@ async function Page({ user, searchParams }: PageProps) {
     ? new Date(`${searchParams.to}T23:59:59`)
     : new Date();
 
-  const [payments, appointments, clientsCount, newClients] = await Promise.all([
+  const [payments, appointments, clientsCount, newClients, unpaidAppointments] =
+    await Promise.all([
     prisma.payment.findMany({
       where: { ...scope, paymentDate: { gte: from, lte: to } }
     }),
@@ -29,7 +34,14 @@ async function Page({ user, searchParams }: PageProps) {
       where: { ...scope, startAt: { gte: from, lte: to } }
     }),
     prisma.client.count({ where: { ...scope } }),
-    prisma.client.count({ where: { ...scope, createdAt: { gte: from, lte: to } } })
+    prisma.client.count({ where: { ...scope, createdAt: { gte: from, lte: to } } }),
+    prisma.appointment.findMany({
+      where: {
+        ...scope,
+        status: { not: AppointmentStatus.CANCELLED },
+        paymentStatus: { in: [PaymentStatus.UNPAID, PaymentStatus.PARTIALLY_PAID] }
+      }
+    })
   ]);
 
   const incomeByDayMap = new Map<string, number>();
@@ -91,8 +103,15 @@ async function Page({ user, searchParams }: PageProps) {
     ).map((client) => [client.id, `${client.firstName} ${client.lastName}`])
   );
 
-  const unpaidTotal = appointments.reduce((sum, appt) => {
-    const paid = payments
+  const unpaidIds = unpaidAppointments.map((appt) => appt.id);
+  const unpaidPayments = unpaidIds.length
+    ? await prisma.payment.findMany({
+        where: { ...scope, appointmentId: { in: unpaidIds } }
+      })
+    : [];
+
+  const unpaidTotal = unpaidAppointments.reduce((sum, appt) => {
+    const paid = unpaidPayments
       .filter((payment) => payment.appointmentId === appt.id)
       .reduce((sub, payment) => sub + Number(payment.amount), 0);
     const diff = Number(appt.price) - paid;
@@ -106,7 +125,7 @@ async function Page({ user, searchParams }: PageProps) {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Reports" description="Business insights" />
+      <PageHeader title={dict.labels.reports} description={dict.labels.reportsDesc} />
 
       <form className="flex flex-wrap items-center gap-2">
         <input
@@ -122,22 +141,24 @@ async function Page({ user, searchParams }: PageProps) {
           className="rounded-md border px-3 py-2 text-sm"
         />
         <button type="submit" className="rounded-md border px-3 py-2 text-sm">
-          Apply
+          {dict.labels.apply}
         </button>
       </form>
 
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-xl border bg-white p-4">
-          <div className="text-sm text-muted-foreground">Income</div>
+          <div className="text-sm text-muted-foreground">{dict.labels.income}</div>
           <div className="mt-2 text-2xl font-semibold">${totalIncome.toFixed(2)}</div>
         </div>
         <div className="rounded-xl border bg-white p-4">
-          <div className="text-sm text-muted-foreground">Clients</div>
+          <div className="text-sm text-muted-foreground">{dict.labels.clients}</div>
           <div className="mt-2 text-2xl font-semibold">{clientsCount}</div>
           <div className="text-xs text-muted-foreground">New: {newClients}</div>
         </div>
         <div className="rounded-xl border bg-white p-4">
-          <div className="text-sm text-muted-foreground">Unpaid total</div>
+          <div className="text-sm text-muted-foreground">
+            {dict.labels.unpaidTotal}
+          </div>
           <div className="mt-2 text-2xl font-semibold">${unpaidTotal.toFixed(2)}</div>
         </div>
       </div>

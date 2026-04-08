@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { UserRole } from "@/app/_prisma/enums";
+import { Language, UserRole } from "@/app/_prisma/enums";
 
 export const SignInSchema = z.object({
   email: z.string().email(),
@@ -28,11 +28,16 @@ export const CreateUserSchema = z.object({
 export const UpdateUserSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
-  role: z.nativeEnum(UserRole)
+  role: z.nativeEnum(UserRole),
+  language: z.nativeEnum(Language).optional()
 });
 
 export const ChangePasswordSchema = z.object({
   currentPassword: z.string().min(6),
   newPassword: z.string().min(6),
   confirmPassword: z.string().min(6)
+});
+
+export const UpdateLanguageSchema = z.object({
+  language: z.nativeEnum(Language)
 });

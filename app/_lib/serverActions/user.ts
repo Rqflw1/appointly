@@ -6,13 +6,15 @@ import { getResult } from "@/app/_lib/functions/general";
 import {
   ChangePasswordSchema,
   CreateUserSchema,
+  UpdateLanguageSchema,
   UpdateUserSchema
 } from "@/app/_lib/validation/auth";
 import { getSessionAndUser } from "../serverFunctions/auth";
 import { logAudit } from "../serverFunctions/audit";
 import { verifyCsrfToken } from "../serverFunctions/csrf";
-import { UserRole } from "@/app/_prisma/enums";
+import { Language, UserRole } from "@/app/_prisma/enums";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 
 export async function createUserAction(formData: FormData) {
   try {
@@ -64,7 +66,8 @@ export async function updateUserAction(formData: FormData) {
     const data = {
       name: String(formData.get("name") || ""),
       email: String(formData.get("email") || ""),
-      role: formData.get("role") || UserRole.MANAGER
+      role: formData.get("role") || UserRole.MANAGER,
+      language: formData.get("language") || undefined
     };
     const zRes = UpdateUserSchema.safeParse(data);
     if (!zRes.success) return getResult(false, 400, null);
@@ -74,7 +77,8 @@ export async function updateUserAction(formData: FormData) {
       data: {
         name: zRes.data.name,
         email: zRes.data.email,
-        role: zRes.data.role
+        role: zRes.data.role,
+        language: (zRes.data.language as Language | undefined) ?? undefined
       }
     });
 
@@ -128,14 +132,19 @@ export async function updateProfileAction(formData: FormData) {
     const data = {
       name: String(formData.get("name") || ""),
       email: String(formData.get("email") || ""),
-      role: user.role
+      role: user.role,
+      language: formData.get("language") || undefined
     };
     const zRes = UpdateUserSchema.safeParse(data);
     if (!zRes.success) return getResult(false, 400, null);
 
     await prisma.user.update({
       where: { id: user.id },
-      data: { name: zRes.data.name, email: zRes.data.email }
+      data: {
+        name: zRes.data.name,
+        email: zRes.data.email,
+        language: (zRes.data.language as Language | undefined) ?? user.language
+      }
     });
 
     await logAudit({
@@ -190,6 +199,51 @@ export async function changePasswordAction(formData: FormData) {
     });
 
     revalidatePath("/profile");
+    return getResult(true, 200, user.id);
+  } catch {
+    return getResult(false, 500, null);
+  }
+}
+
+export async function updateLanguageAction(formData: FormData) {
+  try {
+    await verifyCsrfToken(formData);
+    const { user } = await getSessionAndUser();
+    if (!user) return getResult(false, 401, null);
+
+    const data = {
+      language: formData.get("language")
+    };
+    const zRes = UpdateLanguageSchema.safeParse(data);
+    if (!zRes.success) return getResult(false, 400, null);
+
+    const store = await cookies();
+    store.set("language", zRes.data.language, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/"
+    });
+
+    try {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { language: zRes.data.language }
+      });
+    } catch {
+      // If DB enum is not migrated yet, keep cookie-based locale anyway.
+    }
+
+    await logAudit({
+      userId: user.id,
+      action: "update_language",
+      entityType: "user",
+      entityId: user.id,
+      description: `Updated language to ${zRes.data.language}`
+    });
+
+    revalidatePath("/profile");
+    revalidatePath("/dashboard");
     return getResult(true, 200, user.id);
   } catch {
     return getResult(false, 500, null);

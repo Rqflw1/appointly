@@ -16,7 +16,8 @@ export const DEFAULT_LANGUAGE = Language.EN;
 
 export const LOCALE = {
   [Language.EN]: "en-US",
-  [Language.RU]: "ru-RU"
+  [Language.RU]: "ru-RU",
+  [Language.LV]: "lv-LV"
 };
 
 export const DEFAULT_PAGINATION_STATE = {
