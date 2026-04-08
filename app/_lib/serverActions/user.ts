@@ -1,188 +1,197 @@
 "use server";
 
 import bcrypt from "bcrypt";
-import { Permission, UserAccessLevel } from "@/app/_prisma/enums";
-import { getResult } from "../functions/general";
 import { prisma } from "@/app/_lib/constants/prisma";
-import { logger } from "../constants/logger";
-import { CODE_TTL } from "../constants/code";
+import { getResult } from "@/app/_lib/functions/general";
 import {
-  ChangePasswordModel,
-  DeleteUserModel,
-  RecoverPasswordModel,
-  UpdateUserModel
-} from "../types/user";
+  ChangePasswordSchema,
+  CreateUserSchema,
+  UpdateUserSchema
+} from "@/app/_lib/validation/auth";
 import { getSessionAndUser } from "../serverFunctions/auth";
-import { refresh } from "next/cache";
-import { hasPermission } from "../serverFunctions/permissions";
-import { CodeSchema, EmailSchema, PasswordSchema } from "../validation/general";
-import { getCompanyFromCookies } from "../serverFunctions/company";
+import { logAudit } from "../serverFunctions/audit";
+import { verifyCsrfToken } from "../serverFunctions/csrf";
+import { UserRole } from "@/app/_prisma/enums";
+import { revalidatePath } from "next/cache";
 
-export async function updateUserAction(id: string, model: UpdateUserModel) {
+export async function createUserAction(formData: FormData) {
   try {
+    await verifyCsrfToken(formData);
     const { user } = await getSessionAndUser();
-    if (!user) return getResult(false, 401);
+    if (!user || user.role !== UserRole.ADMIN) return getResult(false, 403, null);
 
-    const { name, surname, email, language } = model;
+    const data = {
+      name: String(formData.get("name") || ""),
+      email: String(formData.get("email") || ""),
+      password: String(formData.get("password") || ""),
+      role: formData.get("role") || UserRole.MANAGER
+    };
+    const zRes = CreateUserSchema.safeParse(data);
+    if (!zRes.success) return getResult(false, 400, null);
 
-    await prisma.user.update({
-      where: { id },
-      data: { name, surname, email, language }
-    });
-
-    refresh();
-    return getResult(true, 0);
-  } catch (error) {
-    logger.error(error);
-    refresh();
-    return getResult(false, 500);
-  }
-}
-
-export async function changePasswordAction(model: ChangePasswordModel) {
-  try {
-    const { user } = await getSessionAndUser();
-    if (!user) return getResult(false, 401);
-
-    const { currentPassword, newPassword } = model;
-
-    const isMatch = await bcrypt.compare(currentPassword, user.password);
-    if (!isMatch) return getResult(false, 1);
-
-    const salt = await bcrypt.genSalt();
-    const hash = await bcrypt.hash(newPassword, salt);
-
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { password: hash }
-    });
-
-    refresh();
-    return getResult(true, 0);
-  } catch (error) {
-    logger.error(error);
-    refresh();
-    return getResult(false, 500);
-  }
-}
-
-export async function changeRoleAction(userId: string, role: UserAccessLevel) {
-  try {
-    const { user } = await getSessionAndUser();
-    if (!user) return getResult(false, 401);
-
-    const company = await getCompanyFromCookies(user);
-    if (!company) return getResult(false, 403);
-
-    if (
-      !(await hasPermission(
-        user,
-        company.id,
-        Permission.COMPANY_SETTINGS_WRITE
-      ))
-    )
-      return getResult(false, 403);
-
-    await prisma.companyUser.update({
-      where: { userId_companyId: { companyId: company.id, userId } },
-      data: { role }
-    });
-
-    refresh();
-    return getResult(true, 0);
-  } catch (error) {
-    logger.error(error);
-    refresh();
-    return getResult(false, 500);
-  }
-}
-
-export async function revokeAccessAction(userId: string) {
-  try {
-    const { user } = await getSessionAndUser();
-    if (!user) return getResult(false, 401);
-
-    const company = await getCompanyFromCookies(user);
-    if (!company) return getResult(false, 403);
-
-    if (
-      !(await hasPermission(
-        user,
-        company.id,
-        Permission.COMPANY_SETTINGS_WRITE
-      ))
-    )
-      return getResult(false, 403);
-
-    await prisma.companyUser.delete({
-      where: { userId_companyId: { companyId: company.id, userId } }
-    });
-    refresh();
-    return getResult(true, 0);
-  } catch (error) {
-    logger.error(error);
-    refresh();
-    return getResult(false, 500);
-  }
-}
-
-export async function deleteUserAction(model: DeleteUserModel) {
-  try {
-    const { user } = await getSessionAndUser();
-    if (!user) return getResult(false, 401);
-
-    const { password } = model;
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return getResult(false, 1);
-
-    await prisma.user.delete({ where: { id: user.id } });
-
-    refresh();
-    return getResult(true, 0);
-  } catch (error) {
-    logger.error(error);
-    refresh();
-    return getResult(false, 500);
-  }
-}
-
-export async function recoverPasswordAction(model: RecoverPasswordModel) {
-  try {
-    const { email, code, password } = model;
-
-    const zResEmail = EmailSchema.safeParse(email);
-    const zResCode = CodeSchema.safeParse(code);
-    const zResPassword = PasswordSchema.safeParse(password);
-
-    if (!zResEmail.success) return getResult(false, 1);
-    if (!zResCode.success) return getResult(false, 2);
-    if (!zResPassword.success) return getResult(false, 3);
-
-    const user = await prisma.user.findFirst({ where: { email } });
-    if (!user) return getResult(false, 4);
-
-    const vCode = await prisma.verificationCode.findFirst({
-      where: {
-        userId: user.id,
-        code: zResCode.data,
-        createdAt: { gte: new Date(Date.now() - CODE_TTL) }
+    const hash = await bcrypt.hash(zRes.data.password, 10);
+    const created = await prisma.user.create({
+      data: {
+        name: zRes.data.name,
+        email: zRes.data.email,
+        password: hash,
+        role: zRes.data.role
       }
     });
 
-    if (!vCode) return getResult(false, 5);
+    await logAudit({
+      userId: user.id,
+      action: "create_user",
+      entityType: "user",
+      entityId: created.id,
+      description: `Created user ${created.email}`
+    });
 
-    const salt = await bcrypt.genSalt();
-    const hash = await bcrypt.hash(zResPassword.data, salt);
+    revalidatePath("/users");
+    return getResult(true, 200, created.id);
+  } catch {
+    return getResult(false, 500, null);
+  }
+}
+
+export async function updateUserAction(formData: FormData) {
+  try {
+    await verifyCsrfToken(formData);
+    const { user } = await getSessionAndUser();
+    if (!user || user.role !== UserRole.ADMIN) return getResult(false, 403, null);
+
+    const id = String(formData.get("id") || "");
+    const data = {
+      name: String(formData.get("name") || ""),
+      email: String(formData.get("email") || ""),
+      role: formData.get("role") || UserRole.MANAGER
+    };
+    const zRes = UpdateUserSchema.safeParse(data);
+    if (!zRes.success) return getResult(false, 400, null);
+
+    await prisma.user.update({
+      where: { id },
+      data: {
+        name: zRes.data.name,
+        email: zRes.data.email,
+        role: zRes.data.role
+      }
+    });
+
+    await logAudit({
+      userId: user.id,
+      action: "update_user",
+      entityType: "user",
+      entityId: id,
+      description: `Updated user ${id}`
+    });
+
+    revalidatePath("/users");
+    return getResult(true, 200, id);
+  } catch {
+    return getResult(false, 500, null);
+  }
+}
+
+export async function deleteUserAction(formData: FormData) {
+  try {
+    await verifyCsrfToken(formData);
+    const { user } = await getSessionAndUser();
+    if (!user || user.role !== UserRole.ADMIN) return getResult(false, 403, null);
+
+    const id = String(formData.get("id") || "");
+    if (id === user.id) return getResult(false, 400, null);
+
+    await prisma.user.delete({ where: { id } });
+
+    await logAudit({
+      userId: user.id,
+      action: "delete_user",
+      entityType: "user",
+      entityId: id,
+      description: `Deleted user ${id}`
+    });
+
+    revalidatePath("/users");
+    return getResult(true, 200, id);
+  } catch {
+    return getResult(false, 500, null);
+  }
+}
+
+export async function updateProfileAction(formData: FormData) {
+  try {
+    await verifyCsrfToken(formData);
+    const { user } = await getSessionAndUser();
+    if (!user) return getResult(false, 401, null);
+
+    const data = {
+      name: String(formData.get("name") || ""),
+      email: String(formData.get("email") || ""),
+      role: user.role
+    };
+    const zRes = UpdateUserSchema.safeParse(data);
+    if (!zRes.success) return getResult(false, 400, null);
 
     await prisma.user.update({
       where: { id: user.id },
-      data: { password: hash }
+      data: { name: zRes.data.name, email: zRes.data.email }
     });
 
-    return getResult(true, 0);
-  } catch (error) {
-    logger.error(error);
-    return getResult(false, 500);
+    await logAudit({
+      userId: user.id,
+      action: "update_profile",
+      entityType: "user",
+      entityId: user.id,
+      description: "Updated profile"
+    });
+
+    revalidatePath("/profile");
+    return getResult(true, 200, user.id);
+  } catch {
+    return getResult(false, 500, null);
+  }
+}
+
+export async function changePasswordAction(formData: FormData) {
+  try {
+    await verifyCsrfToken(formData);
+    const { user } = await getSessionAndUser();
+    if (!user) return getResult(false, 401, null);
+
+    const data = {
+      currentPassword: String(formData.get("currentPassword") || ""),
+      newPassword: String(formData.get("newPassword") || ""),
+      confirmPassword: String(formData.get("confirmPassword") || "")
+    };
+    const zRes = ChangePasswordSchema.safeParse(data);
+    if (!zRes.success) return getResult(false, 400, null);
+    if (zRes.data.newPassword !== zRes.data.confirmPassword)
+      return getResult(false, 400, null);
+
+    const dbUser = await prisma.user.findFirst({ where: { id: user.id } });
+    if (!dbUser) return getResult(false, 404, null);
+
+    const isMatch = await bcrypt.compare(
+      zRes.data.currentPassword,
+      dbUser.password
+    );
+    if (!isMatch) return getResult(false, 400, null);
+
+    const hash = await bcrypt.hash(zRes.data.newPassword, 10);
+    await prisma.user.update({ where: { id: user.id }, data: { password: hash } });
+
+    await logAudit({
+      userId: user.id,
+      action: "change_password",
+      entityType: "user",
+      entityId: user.id,
+      description: "Changed password"
+    });
+
+    revalidatePath("/profile");
+    return getResult(true, 200, user.id);
+  } catch {
+    return getResult(false, 500, null);
   }
 }

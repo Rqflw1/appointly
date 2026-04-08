@@ -1,9 +1,5 @@
 import { ReactNode } from "react";
-import LocaleProvider from "../_components/context/LocaleProvider";
-import Header from "../_components/general/Header";
-import { getDictionary } from "../_lib/functions/general";
-import { DEFAULT_LANGUAGE } from "../_lib/constants/general";
-import { publicRoute } from "../_lib/serverFunctions/auth";
+import { publicRoute } from "@/app/_lib/serverFunctions/auth";
 
 interface ComponentProps {
   children: ReactNode;
@@ -11,13 +7,19 @@ interface ComponentProps {
 
 export default publicRoute(Layout);
 async function Layout({ children }: ComponentProps) {
-  const language = DEFAULT_LANGUAGE;
-  const dict = getDictionary(language);
-
   return (
-    <LocaleProvider language={language}>
-      <Header dict={dict} />
-      {children}
-    </LocaleProvider>
+    <div className="min-h-screen bg-muted/30">
+      <div className="mx-auto flex min-h-screen max-w-5xl items-center justify-center px-6">
+        <div className="w-full max-w-md rounded-2xl border bg-white p-8 shadow-sm">
+          <div className="mb-6">
+            <div className="text-2xl font-semibold">Mini CRM</div>
+            <div className="text-sm text-muted-foreground">
+              Sign in to manage clients, bookings, and payments.
+            </div>
+          </div>
+          {children}
+        </div>
+      </div>
+    </div>
   );
 }

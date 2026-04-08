@@ -1,20 +1,20 @@
-name: erekini
+name: minicrm
 services:
-  erekini-nextjs:
+  minicrm-nextjs:
     build:
       context: ../../
       dockerfile: docker/dev/Dockerfile.nextjs
-    image: erekini-nextjs
-    container_name: erekini-nextjs
+    image: minicrm-nextjs
+    container_name: minicrm-nextjs
     restart: always
     ports:
       - "3000:3000"
     volumes:
       - ../../:/app
       - /app/node_modules
-  erekini-postgres:
+  minicrm-postgres:
     image: postgres:16-alpine
-    container_name: erekini-postgres
+    container_name: minicrm-postgres
     env_file: ../../.env.dev.local
     restart: always
     ports:

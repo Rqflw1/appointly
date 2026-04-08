@@ -7,13 +7,11 @@ import { TooltipProvider } from "./_shadcn/components/ui/tooltip";
 const poppins = Poppins({
   subsets: ["latin"],
   weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"]
-  // display: "swap"
-  // adjustFontFallback: false
 });
 
 export const metadata: Metadata = {
-  title: "App",
-  description: "App description"
+  title: "Mini CRM",
+  description: "Mini CRM & billing system for small businesses"
 };
 
 export default async function RootLayout({
@@ -24,12 +22,7 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className={`${poppins.className} antialiased min-w-80`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light" // system
-          // enableSystem
-          disableTransitionOnChange
-        >
+        <ThemeProvider attribute="class" defaultTheme="light" disableTransitionOnChange>
           <TooltipProvider>{children}</TooltipProvider>
         </ThemeProvider>
       </body>

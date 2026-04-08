@@ -1,23 +1,23 @@
-name: erekini
+name: minicrm
 services:
-  erekini-acme:
+  minicrm-acme:
     build:
       context: ../../
       dockerfile: docker/prod/Dockerfile.acme
-    image: erekini-acme
-    container_name: erekini-acme
+    image: minicrm-acme
+    container_name: minicrm-acme
     tty: true
     restart: always
     volumes:
       - /app/acme-challenge:/acme-challenge
-      - /app/acme-certificates:/acme.sh/einvoices.telegroup.lv
+      - /app/acme-certificates:/acme.sh/minicrm.local
       - /var/run/docker.sock:/var/run/docker.sock
-  erekini-nginx:
+  minicrm-nginx:
     build:
       context: ../../
       dockerfile: docker/prod/Dockerfile.nginx
-    image: erekini-nginx
-    container_name: erekini-nginx
+    image: minicrm-nginx
+    container_name: minicrm-nginx
     restart: always
     ports:
       - "80:80"
@@ -25,18 +25,18 @@ services:
     volumes:
       - /app/acme-challenge:/acme-challenge
       - /app/acme-certificates:/acme-certificates
-  erekini-nextjs:
+  minicrm-nextjs:
     build:
       context: ../../
       dockerfile: docker/prod/Dockerfile.nextjs
-    image: erekini-nextjs
-    container_name: erekini-nextjs
+    image: minicrm-nextjs
+    container_name: minicrm-nextjs
     restart: always
     ports:
       - "3000:3000"
-  erekini-postgres:
+  minicrm-postgres:
     image: postgres:16-alpine
-    container_name: erekini-postgres
+    container_name: minicrm-postgres
     env_file: ../../.env.prod.local
     restart: always
     ports:

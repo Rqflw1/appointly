@@ -1,5 +1,5 @@
 {
-  "name": "erekini",
+  "name": "minicrm",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -14,10 +14,13 @@
     "deploy": "./scripts/deploy.sh",
     "env": "./scripts/env.sh",
     "ssh": "./scripts/ssh.sh",
-    "dev": "next dev",
+    "dev": "NEXT_DISABLE_TURBOPACK=1 next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.859.0",

@@ -1,8 +1,4 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// Prisma schema for Mini CRM / Billing System
 
 generator client {
   provider = "prisma-client"
@@ -17,65 +13,44 @@ datasource db {
 
 enum Language {
   EN
-  LV
   RU
 }
 
-enum UserAccessLevel {
-  OWNER
+enum UserRole {
   ADMIN
   MANAGER
-  VIEWER
 }
 
-enum Permission {
-  DOCUMENT_READ
-  DOCUMENT_WRITE
-  COMPANY_SETTINGS_READ
-  COMPANY_SETTINGS_WRITE
-  COMPANY_DELETE
+enum AppointmentStatus {
+  PLANNED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
 }
 
-enum DocumentType {
-  INVOICE
-  WAYBILL
-  PREPAYMENT
-  DEBIT_NOTE
-}
-
-enum DocumentStatus {
-  DRAFT
-  READY
-  SENT
+enum PaymentStatus {
+  UNPAID
   PAID
+  PARTIALLY_PAID
 }
 
-enum DocumentEventType {
-  CREATE
-  UPDATE
-  SEND
-  DOWNLOAD
-}
-
-enum SignatureType {
-  WITHOUT_SIGNATURE
-  ONLY_SUPPLIER_SIGNATURE
-  BOTH_SIGNATURES
-}
-
-enum PaymentMethodType {
-  BANK
-  CARD
+enum PaymentMethod {
   CASH
-  ONLINE
+  CARD
+  BANK_TRANSFER
   OTHER
 }
 
-enum IndexRefreshRate {
-  YEAR
-  MONTH
-  DAY
-  NEVER
+enum ReminderType {
+  APPOINTMENT
+  PAYMENT
+  DEBT
+}
+
+enum ReminderStatus {
+  PENDING
+  SENT
+  CANCELLED
 }
 
 // ----------------------------------------------------------------------------
@@ -83,309 +58,137 @@ enum IndexRefreshRate {
 model User {
   id       String   @id @default(uuid())
   name     String
-  surname  String
   email    String   @unique
   password String
-  language Language
+  role     UserRole @default(MANAGER)
+  language Language @default(EN)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  documents         Document[]
-  documentEvents    DocumentEvent[]
-  companies         CompanyUser[]
-  verificationCodes VerificationCode[]
+  clients      Client[]
+  services     Service[]
+  appointments Appointment[]
+  payments     Payment[]
+  reminders    Reminder[]
+  auditLogs    AuditLog[]
 }
 
-model Company {
-  id           String    @id @default(uuid())
-  isIndividual Boolean
-  country      String
-  name         String
-  regNum       String
-  vatNum       String
-  address      String
-  email        String
-  url          String
-  phone        String
-  note         String
-  comment      String
-  language     Language?
-  currency     String
-  duePeriod    Int?
-  lateFeeRate  Float?
-  vatRate      Float?
-  color        String
-
-  smtpHost        String
-  smtpUser        String
-  smtpPassword    Bytes // @default(dbgenerated("decode('', 'hex')"))
-  smtpPasswordDek Bytes
+model Client {
+  id        String   @id @default(uuid())
+  managerId String
+  firstName String
+  lastName  String
+  phone     String?
+  email     String?
+  notes     String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  documentAsSupplier  Document? @relation("Supplier")
-  documentAsRecipient Document? @relation("Recipient")
+  manager      User          @relation(fields: [managerId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+  payments     Payment[]
+  reminders    Reminder[]
 
-  partner   Company? @relation("Partners", fields: [partnerId], references: [id], onDelete: Cascade)
-  partnerId String?
-
-  users            CompanyUser[]
-  documents        Document[]         @relation("Documents")
-  paymentMethods   PaymentMethod[]
-  items            Item[]
-  partners         Company[]          @relation("Partners")
-  logo             Logo?
-  documentSettings DocumentSettings[]
-  emailSettings    EmailSettings[]
-  invitations      Invitation[]
-  units            Unit[]
+  @@index([managerId])
+  @@index([lastName, firstName])
 }
 
-model CompanyUser {
-  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
-  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  companyId String
-
-  role UserAccessLevel
+model Service {
+  id              String   @id @default(uuid())
+  managerId       String
+  title           String
+  description     String
+  price           Decimal  @db.Decimal(10, 2)
+  durationMinutes Int
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@id([userId, companyId])
+  manager      User          @relation(fields: [managerId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+
+  @@index([managerId])
 }
 
-model Document {
-  id                String         @id @default(uuid())
-  type              DocumentType
-  language          Language
-  currency          String
-  status            DocumentStatus
-  docNum            String
-  docDate           DateTime
-  dateFrom          DateTime?
-  dateTo            DateTime?
-  dueDate           DateTime
-  duePeriod         Int
-  lateFeeRate       Float
-  note              String
-  signatureType     SignatureType
-  showElectronicSignatureNotice Boolean @default(false)
-  netTotal          Float
-  grossTotal        Float
-  currencyRate      Float
-  showCurrencyRate  Boolean
-  paymentMethodType String
-  color             String
-
-  supplierSignatureName     String
-  supplierSignatureDate     DateTime?
-  supplierSignatureHasLine  Boolean
-  recipientSignatureName    String
-  recipientSignatureDate    DateTime?
-  recipientSignatureHasLine Boolean
-
-  showCarrier        Boolean
-  carrierCountry     String
-  carrierName        String
-  carrierRegNum      String
-  driver             String
-  vehicle            String
-  vehicleNum         String
-  originAddress      String
-  destinationAddress String
+model Appointment {
+  id              String            @id @default(uuid())
+  managerId       String
+  clientId        String
+  serviceId       String
+  startAt         DateTime
+  durationMinutes Int
+  status          AppointmentStatus @default(PLANNED)
+  price           Decimal           @db.Decimal(10, 2)
+  paymentStatus   PaymentStatus     @default(UNPAID)
+  notes           String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  author   User   @relation(fields: [authorId], references: [id])
-  authorId String
+  manager  User    @relation(fields: [managerId], references: [id], onDelete: Cascade)
+  client   Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  service  Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  payments Payment[]
+  reminders Reminder[]
 
-  company   Company @relation("Documents", fields: [companyId], references: [id], onDelete: Cascade)
-  companyId String
-
-  logo   Logo?   @relation(fields: [logoId], references: [id])
-  logoId String?
-
-  supplier   Company @relation("Supplier", fields: [supplierId], references: [id])
-  supplierId String  @unique
-
-  recipient   Company @relation("Recipient", fields: [recipientId], references: [id])
-  recipientId String  @unique
-
-  items Item[]
-
-  fromDocuments DocumentSettlement[] @relation("ToDocument")
-  toDocuments   DocumentSettlement[] @relation("FromDocument")
-
-  events DocumentEvent[]
+  @@index([managerId, startAt])
+  @@index([clientId])
 }
 
-model DocumentEvent {
-  id                String            @id @default(uuid())
-  documentEventType DocumentEventType
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId String
-
-  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  documentId String
+model Payment {
+  id            String        @id @default(uuid())
+  managerId     String
+  clientId      String
+  appointmentId String?
+  amount        Decimal       @db.Decimal(10, 2)
+  method        PaymentMethod
+  paymentDate   DateTime
+  notes         String
 
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+
+  manager     User         @relation(fields: [managerId], references: [id], onDelete: Cascade)
+  client      Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  appointment Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+
+  @@index([managerId, paymentDate])
+  @@index([clientId])
 }
 
-model PaymentMethod {
-  id            String            @id @default(uuid())
-  type          PaymentMethodType
-  name          String
-  accNum        String
-  note          String
-  showByDefault Boolean           
-  field_1       String            
+model Reminder {
+  id            String         @id @default(uuid())
+  managerId     String
+  clientId      String
+  appointmentId String?
+  type          ReminderType
+  remindAt      DateTime
+  status        ReminderStatus @default(PENDING)
+  message       String
 
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
-  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  companyId String
+  manager     User         @relation(fields: [managerId], references: [id], onDelete: Cascade)
+  client      Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  appointment Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+
+  @@index([managerId, remindAt])
+  @@index([clientId])
 }
 
-model Item {
-  id            String @id @default(uuid())
-  sku           String
-  name          String
-  description   String
-  unit          String
-  quantity      Float
-  currency      String
-  basePrice     Float
-  discountRate  Float
-  discountValue Float
-  netPrice      Float
-  vatRate       Float?
-  vatValue      Float
-  grossPrice    Float
-  baseTotal     Float
-  discountTotal Float
-  netTotal      Float
-  vatTotal      Float
-  grossTotal    Float
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  document   Document? @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  documentId String?
-
-  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  companyId String?
-}
-
-model VerificationCode {
-  id   Int    @id @default(autoincrement())
-  code String @unique
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Logo {
-  id String @id @default(uuid())
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  company   Company? @relation(fields: [companyId], references: [id])
-  companyId String?  @unique
-
-  documents Document[]
-}
-
-model DocumentSettings {
-  type             DocumentType
-  docNum           String
-  indexRefreshRate IndexRefreshRate
-  index            Int
-  note             String
-  lastRefresh      DateTime
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  companyId String
-
-  @@id([companyId, type])
-}
-
-model DocumentSettlement {
-  fromDocument   Document @relation("FromDocument", fields: [fromDocumentId], references: [id])
-  fromDocumentId String
-
-  toDocument   Document @relation("ToDocument", fields: [toDocumentId], references: [id], onDelete: Cascade)
-  toDocumentId String
-
-  amount Float
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@id([fromDocumentId, toDocumentId])
-}
-
-model Invitation {
-  id    String          @id @default(uuid())
-  email String
-  role  UserAccessLevel
-
-  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  companyId String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model EmailSettings {
-  type    DocumentType
-  cc      String
-  subject String
-  message String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  companyId String
-
-  @@id([companyId, type])
-}
-
-model CurrencyRate {
-  id   String @id @default(uuid())
-  code String @unique
-  rate Float
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Unit {
-  id String @id @default(uuid())
-
-  name        String
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String
+  action     String
+  entityType String
+  entityId   String?
   description String
-
-  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  companyId String
+  ipAddress  String
 
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
-  @@unique([companyId, name])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }

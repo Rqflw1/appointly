@@ -1,177 +1,109 @@
 "use client";
 
-import { MouseEvent, useContext } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { useInputValue } from "@/app/_lib/hooks/useInputValue";
-import FormError from "../general/FormError";
-import { Label } from "@/app/_shadcn/components/ui/label";
-import { Input } from "@/app/_shadcn/components/ui/input";
-import { Button } from "@/app/_shadcn/components/ui/button";
-import { LocaleContext } from "../context/LocaleProvider";
-import { Checkbox } from "@/app/_shadcn/components/ui/checkbox";
-import { EmailSchema, PasswordSchema } from "@/app/_lib/validation/general";
-import { SignUpModel } from "@/app/_lib/types/auth";
+import { FormEvent, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { signUpAction } from "@/app/_lib/serverActions/auth";
-import { useFormState } from "@/app/_lib/hooks/useFormState";
-import { toastHelper } from "@/app/_lib/constants/general";
-import PasswordInput from "../input/PasswordInput";
 
-export default function SignUpForm() {
-  const { dict } = useContext(LocaleContext);
+interface ComponentProps {
+  csrfToken: string;
+}
+
+export default function SignUpForm({ csrfToken }: ComponentProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const [error, setError] = useState<string>("");
+  const [isPending, startTransition] = useTransition();
 
-  const { isLoading, setIsLoading } = useFormState();
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    const formData = new FormData(event.currentTarget);
 
-  const [name, setName, nameError, setNameError] = useInputValue("");
-  const [surname, setSurname, surnameError, setSurnameError] =
-    useInputValue("");
-  const [email, setEmail, emailError, setEmailError] = useInputValue("");
-  const [password, setPassword, passwordError, setPasswordError] =
-    useInputValue("");
-  const [
-    confirmPassword,
-    setConfirmPassword,
-    confirmPasswordError,
-    setConfirmPasswordError
-  ] = useInputValue("");
-  const [agree, setAgree, agreeError, setAgreeError] = useInputValue(false);
-
-  async function signUp(e: MouseEvent<HTMLButtonElement>) {
-    e.preventDefault();
-
-    const zResEmail = EmailSchema.safeParse(email);
-    const zResPassword = PasswordSchema.safeParse(password);
-
-    if (!name) setNameError(dict.errors.nameIsRequired);
-    if (!surname) setSurnameError(dict.errors.surnameIsRequired);
-    if (!zResEmail.success) setEmailError(dict.errors.invalidEmail);
-    if (!zResPassword.success)
-      setPasswordError(dict.errors.passwordMustContain);
-    if (password !== confirmPassword)
-      setConfirmPasswordError(dict.errors.passwordsDontMatch);
-    if (!agree) setAgreeError(dict.errors.youMustAgree);
-
-    if (!name) return;
-    if (!surname) return;
-    if (!zResEmail.success) return;
-    if (!zResPassword.success) return;
-    if (password !== confirmPassword) return;
-    if (!agree) return;
-
-    const model: SignUpModel = {
-      name,
-      surname,
-      email: zResEmail.data,
-      password: zResPassword.data
-    };
-    setIsLoading(true);
-    const res = await signUpAction(model);
-    setIsLoading(false);
-
-    if (res.ok) {
-      const returnUrl = searchParams.get("returnUrl") || "";
-      router.push(returnUrl || "/documents");
-      // TODO: check if router.refresh() and refresh() from next/cache clears input fields on error
+    startTransition(async () => {
+      const res = await signUpAction(formData);
+      if (!res.ok) {
+        if (res.code === 403) {
+          setError("Sign up is disabled. Please sign in.");
+        } else if (res.code === 500 && res.data === "db_not_ready") {
+          setError("Database not initialized. Run db:push and seed.");
+        } else if (res.code === 400) {
+          setError("Please check the form fields.");
+        } else {
+          setError("Server error. Please try again.");
+        }
+        return;
+      }
+      router.push("/dashboard");
       router.refresh();
-    } else {
-      if (res.code === 1) setEmailError(dict.errors.userAlreadyExists);
-      if (res.code === 500) toastHelper.error(dict);
-    }
+    });
   }
 
   return (
-    <form>
+    <form onSubmit={onSubmit} className="space-y-4">
+      <input type="hidden" name="csrfToken" value={csrfToken} />
       <div>
-        <Label htmlFor="name">{dict.labels.name}</Label>
-        <Input
+        <label className="text-sm font-medium" htmlFor="name">
+          Name
+        </label>
+        <input
+          className="mt-2 w-full rounded-md border px-3 py-2 text-sm"
           id="name"
+          name="name"
           type="text"
-          className="mt-2"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          aria-invalid={!!nameError}
+          required
+          minLength={2}
         />
-        <FormError error={nameError} className="mt-1" />
       </div>
-      <div className="mt-6">
-        <Label htmlFor="surname">{dict.labels.surname}</Label>
-        <Input
-          id="surname"
-          type="text"
-          className="mt-2"
-          value={surname}
-          onChange={(e) => setSurname(e.target.value)}
-          aria-invalid={!!surnameError}
-        />
-        <FormError error={surnameError} className="mt-1" />
-      </div>
-      <div className="mt-6">
-        <Label htmlFor="email">{dict.labels.email}</Label>
-        <Input
+      <div>
+        <label className="text-sm font-medium" htmlFor="email">
+          Email
+        </label>
+        <input
+          className="mt-2 w-full rounded-md border px-3 py-2 text-sm"
           id="email"
-          type="text"
-          className="mt-2"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          aria-invalid={!!emailError}
+          name="email"
+          type="email"
+          required
         />
-        <FormError error={emailError} className="mt-1" />
       </div>
-      <div className="mt-6">
-        <Label htmlFor="password">{dict.labels.password}</Label>
-        <PasswordInput
+      <div>
+        <label className="text-sm font-medium" htmlFor="password">
+          Password
+        </label>
+        <input
+          className="mt-2 w-full rounded-md border px-3 py-2 text-sm"
           id="password"
-          className="mt-2"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          aria-invalid={!!passwordError}
+          name="password"
+          type="password"
+          required
+          minLength={6}
         />
-        <FormError error={passwordError} className="mt-1" />
       </div>
-      <div className="mt-6">
-        <Label htmlFor="confirmPassword">{dict.labels.confirmPassword}</Label>
-        <PasswordInput
+      <div>
+        <label className="text-sm font-medium" htmlFor="confirmPassword">
+          Confirm password
+        </label>
+        <input
+          className="mt-2 w-full rounded-md border px-3 py-2 text-sm"
           id="confirmPassword"
-          className="mt-2"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          aria-invalid={!!confirmPasswordError}
+          name="confirmPassword"
+          type="password"
+          required
+          minLength={6}
         />
-        <FormError error={confirmPasswordError} className="mt-1" />
       </div>
-      <div className="mt-6">
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id="agree"
-            checked={agree}
-            onCheckedChange={(value) => setAgree(!!value)}
-            aria-invalid={!!agreeError}
-          />
-          <Label htmlFor="agree" className="font-normal">
-            <div>{dict.texts.agreeToTerms}</div>
-          </Label>
-        </div>
-        <FormError error={agreeError} className="mt-2" />
-      </div>
-      <Button
-        disabled={isLoading}
-        isLoading={isLoading}
+      {error ? <div className="text-sm text-destructive">{error}</div> : null}
+      <button
         type="submit"
-        className="mt-6 w-full"
-        onClick={signUp}
+        className="w-full rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+        disabled={isPending}
       >
-        {dict.labels.signUp}
-      </Button>
-      <div className="mt-4 text-center text-sm">
-        <span>{dict.labels.alreadyHaveAnAccount}</span>
-        <Link
-          href={`/sign-in?${searchParams.toString()}`}
-          className="ml-2 underline-offset-2 underline"
-        >
-          {dict.labels.signIn}
-        </Link>
+        {isPending ? "Creating..." : "Create admin"}
+      </button>
+      <div className="text-center text-sm text-muted-foreground">
+        Already have an account?{" "}
+        <a className="text-primary underline" href="/sign-in">
+          Sign in
+        </a>
       </div>
     </form>
   );

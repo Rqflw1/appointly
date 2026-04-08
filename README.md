@@ -1,52 +1,90 @@
-# erekini
+# Mini CRM / Billing System
 
-## Development environment
+A lightweight CRM + billing app for small businesses. Track clients, services, appointments, payments, reminders, and revenue.
 
-Clone repo to WSL
-Decrypt .env files `npm run env`
-Install node_modules on WSL `npm i`
-Run docker containers with build `npm run up:build`
-Initialize database `npm run db:push` (run in container)
-Generate database client `npm run db:gen` (run in container)
-For Shadcn allow access to ./postgres `chmod -R 755 ./postgres`
+## Tech stack
 
-## Production environment
+- Next.js (App Router)
+- Prisma + PostgreSQL
+- Tailwind CSS + shadcn UI
+- Docker (dev/prod configs)
 
-Copy SSH Key from PC to server `ssh-copy-id root@remotehost`
-Install docker on server
+## Features
 
-## Scaleway
+- Role-based access: Admin vs Manager
+- Dashboard with KPIs
+- Clients / Services / Appointments / Payments / Reminders CRUD
+- Analytics & charts (Recharts)
+- Audit log
+- CSV export for clients and payments
+- Profile & password change
 
-Create buckets `erekini-development` and `erekini-production`
+## Local setup
 
-Install AWS CLI to WSL (check latest guides).
-Configure it to Scaleway (https://www.scaleway.com/en/docs/object-storage/api-cli/object-storage-aws-cli/ or check latest guides)
-Configure access in `~/.aws/config`. (See Scaleway guide)
-Use AWS CLI:
+1. Install dependencies
 
-- to get CORS policies `aws s3api get-bucket-cors --bucket erekini-development`
-- to set CORS policies `aws s3api put-bucket-cors --bucket erekini-development --cors-configuration file://./scaleway/cors.dev.json`
-- to delete CORS policies `aws s3api delete-bucket-cors --bucket erekini-development`
+```bash
+npm install
+```
 
-## Initial deploy
+2. Create env file
 
-Fill constants in `./scripts/constants.sh`
-Create docker context `npm run create-context`
-Deploy postgres
-Create migrations `npm run migrate:dev`
-Deploy migrations `npm run migrate:deploy`
-Deploy nextjs
+Copy `.env.example` and fill `DATABASE_URL`, `AUTH_SECRET`, `AUTH_TRUST_HOST`.
 
-## Troubleshooting
+3. Run docker (Postgres)
 
-### Docker/WSL file access error
+```bash
+npm run up:build
+```
 
-Docker creates files under root user but WSL from your user. If they try to access each others files permission error may occur. Try `sudo chown -R $(whoami):$(whoami) ./my-file.txt` or `sudo chown -R user:user ./my-file.txt`
+4. Push schema + generate Prisma client
 
-### Docker ssh error
+```bash
+npm run db:push
+npm run db:gen
+```
 
-Probably unknown host. Try to connect via `ssh root@remotehost`. Accept new host and exit.
+5. Seed demo data (optional)
 
-### Scaleway CORS error
+```bash
+npx prisma db seed
+```
 
-Check Scaleway guide (https://www.scaleway.com/en/docs/object-storage/api-cli/setting-cors-rules/) or view Scaleway section in this file.
+6. Start dev server
+
+```bash
+npm run dev
+```
+
+Open `http://localhost:3000`.
+
+## Test accounts
+
+- Admin: `admin@demo.local` / `admin123`
+- Manager: `manager@demo.local` / `manager123`
+
+## Project structure
+
+```
+app/
+  (public)/        # auth pages
+  (protected)/     # app pages
+  _components/     # UI + layout components
+  _lib/            # server actions, server functions, validations
+  api/             # CSV export + NextAuth
+prisma/            # schema + seed
+  schema.prisma
+  seed.js
+  migrations/
+ database/
+  schema.sql
+  seed.sql
+```
+
+## TODO (future)
+
+- Calendar drag-and-drop
+- Email/Telegram reminder delivery
+- Advanced permissions per manager
+- CSV import
+- Webhooks and integrations

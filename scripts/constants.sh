@@ -11,16 +11,16 @@ readonly IP_STAGE_1="51.15.34.217"
 readonly IP_PROD="51.15.72.105"
 
 readonly CONTEXT_LOCAL="default"
-readonly CONTEXT_STAGE_1="erekini-stage-1"
-readonly CONTEXT_PROD="erekini-production"
+readonly CONTEXT_STAGE_1="minicrm-stage-1"
+readonly CONTEXT_PROD="minicrm-production"
 
 readonly DOCKER_ARGS_LOCAL=(--file ./docker/dev/compose.yml)
 readonly DOCKER_ARGS_STAGE_1=(--file ./docker/stage-1/compose.yml)
 readonly DOCKER_ARGS_PROD=(--file ./docker/prod/compose.yml)
 
-readonly ACME="erekini-acme"
-readonly NGINX="erekini-nginx"
-readonly NEXTJS="erekini-nextjs"
-readonly POSTGRES="erekini-postgres"
+readonly ACME="minicrm-acme"
+readonly NGINX="minicrm-nginx"
+readonly NEXTJS="minicrm-nextjs"
+readonly POSTGRES="minicrm-postgres"
 readonly ALL="all"
 readonly SERVICES=("$ACME" "$NGINX" "$NEXTJS" "$POSTGRES" "$ALL")
