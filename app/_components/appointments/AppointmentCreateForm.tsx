@@ -41,6 +41,7 @@ export default function AppointmentCreateForm({
   });
   const [time, setTime] = useState<string>("10:00");
   const serviceRef = useRef<HTMLSelectElement | null>(null);
+  const dateRef = useRef<HTMLInputElement | null>(null);
   const timeRef = useRef<HTMLInputElement | null>(null);
   const timePickStageRef = useRef<number>(0);
 
@@ -91,17 +92,6 @@ export default function AppointmentCreateForm({
     if (!service) return;
     setDurationMinutes(String(service.durationMinutes));
     setPrice(String(service.price));
-    requestAnimationFrame(() => {
-      const input = timeRef.current;
-      if (!input) return;
-      timePickStageRef.current = 0;
-      if (typeof (input as any).showPicker === "function") {
-        (input as any).showPicker();
-      } else {
-        input.focus();
-        input.click();
-      }
-    });
   }
 
   function buildStartAtValue(dateValue: string, timeValue: string) {
@@ -117,142 +107,213 @@ export default function AppointmentCreateForm({
   }
 
   return (
-    <form action={createAppointmentAction} className="flex flex-wrap gap-2">
+    <form
+      action={createAppointmentAction}
+      className="rounded-2xl border bg-white p-4 shadow-sm"
+    >
       <input type="hidden" name="csrfToken" value={csrfToken} />
       <input
         type="hidden"
         name="startAt"
         value={buildStartAtValue(date, time)}
       />
-      <select
-        name="clientId"
-        required
-        className="rounded-md border px-3 py-2 text-sm"
-        onChange={(event) => {
-          if (!event.target.value) return;
-          requestAnimationFrame(() => {
-            const select = serviceRef.current;
-            if (!select) return;
-            if (typeof (select as any).showPicker === "function") {
-              (select as any).showPicker();
-            } else {
-              select.focus();
-              select.click();
-            }
-          });
-        }}
-      >
-        <option value="">Client</option>
-        {clients.map((client) => (
-          <option key={client.id} value={client.id}>
-            {client.firstName} {client.lastName}
-          </option>
-        ))}
-      </select>
-      <select
-        name="serviceId"
-        required
-        className="rounded-md border px-3 py-2 text-sm"
-        onChange={(event) => handleServiceChange(event.target.value)}
-        ref={serviceRef}
-      >
-        <option value="">Service</option>
-        {services.map((service) => (
-          <option key={service.id} value={service.id}>
-            {service.title}
-          </option>
-        ))}
-      </select>
-      <input
-        type="date"
-        required
-        className="rounded-md border px-3 py-2 text-sm"
-        value={date}
-        onChange={(event) => setDate(event.target.value)}
-      />
-      <input
-        type="time"
-        required
-        className="rounded-md border px-3 py-2 text-sm"
-        value={time}
-        onChange={(event) => {
-          setTime(event.target.value);
-          if (timePickStageRef.current === 0) {
-            timePickStageRef.current = 1;
-            return;
-          }
-          requestAnimationFrame(() => {
-            timeRef.current?.blur();
-            timePickStageRef.current = 0;
-          });
-        }}
-        ref={timeRef}
-      />
+      <div className="grid gap-4 xl:grid-cols-[1.2fr_1.2fr_0.8fr_0.7fr]">
+        <div className="space-y-1">
+          <div className="text-xs font-medium text-muted-foreground">
+            Client
+          </div>
+          <select
+            name="clientId"
+            required
+            className="w-full rounded-md border px-3 py-2 text-sm"
+            onChange={(event) => {
+              if (!event.target.value) return;
+              requestAnimationFrame(() => {
+                const select = serviceRef.current;
+                if (!select) return;
+                if (typeof (select as any).showPicker === "function") {
+                  (select as any).showPicker();
+                } else {
+                  select.focus();
+                  select.click();
+                }
+              });
+            }}
+          >
+            <option value="">Select client</option>
+            {clients.map((client) => (
+              <option key={client.id} value={client.id}>
+                {client.firstName} {client.lastName}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="space-y-1">
+          <div className="text-xs font-medium text-muted-foreground">
+            Service
+          </div>
+          <select
+            name="serviceId"
+            required
+            className="w-full rounded-md border px-3 py-2 text-sm"
+            onChange={(event) => handleServiceChange(event.target.value)}
+            ref={serviceRef}
+          >
+            <option value="">Select service</option>
+            {services.map((service) => (
+              <option key={service.id} value={service.id}>
+                {service.title}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="space-y-1">
+          <div className="text-xs font-medium text-muted-foreground">Date</div>
+          <input
+            type="date"
+            required
+            className="w-full rounded-md border px-3 py-2 text-sm"
+            value={date}
+            onChange={(event) => setDate(event.target.value)}
+            onClick={(event) => {
+              const input = event.currentTarget as HTMLInputElement;
+              if (typeof (input as any).showPicker === "function") {
+                (input as any).showPicker();
+              }
+            }}
+            ref={dateRef}
+          />
+        </div>
+        <div className="space-y-1">
+          <div className="text-xs font-medium text-muted-foreground">Time</div>
+          <input
+            type="time"
+            required
+            className="w-full rounded-md border px-3 py-2 text-sm"
+            value={time}
+            onChange={(event) => {
+              setTime(event.target.value);
+              if (timePickStageRef.current === 0) {
+                timePickStageRef.current = 1;
+                return;
+              }
+              requestAnimationFrame(() => {
+                timeRef.current?.blur();
+                timePickStageRef.current = 0;
+              });
+            }}
+            onClick={(event) => {
+              const input = event.currentTarget as HTMLInputElement;
+              timePickStageRef.current = 0;
+              if (typeof (input as any).showPicker === "function") {
+                (input as any).showPicker();
+              }
+            }}
+            ref={timeRef}
+          />
+        </div>
+      </div>
+
       {availability.length > 0 ? (
-        <div className="flex flex-wrap items-center gap-2">
-          {availability.map((slot) => (
-            <button
-              key={slot.time}
-              type="button"
-              className={`rounded-md border px-2 py-1 text-xs ${
-                slot.available
-                  ? "bg-primary/10 text-primary hover:bg-primary/20"
-                  : "bg-muted text-muted-foreground cursor-not-allowed"
-              }`}
-              onClick={() => {
-                if (!slot.available) return;
-                setTime(slot.time);
-              }}
-              disabled={!slot.available}
-            >
-              {slot.time}
-            </button>
-          ))}
+        <div className="mt-4 space-y-2">
+          <div className="text-xs font-medium text-muted-foreground">
+            Available slots
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {availability.map((slot) => (
+              <button
+                key={slot.time}
+                type="button"
+                className={`whitespace-nowrap rounded-md border px-2 py-1 text-xs ${
+                  slot.available
+                    ? "bg-primary/10 text-primary hover:bg-primary/20"
+                    : "bg-muted text-muted-foreground cursor-not-allowed"
+                }`}
+                onClick={() => {
+                  if (!slot.available) return;
+                  setTime(slot.time);
+                }}
+                disabled={!slot.available}
+              >
+                {slot.time}
+              </button>
+            ))}
+          </div>
         </div>
       ) : null}
-      <input
-        name="durationMinutes"
-        type="number"
-        placeholder="Min"
-        required
-        className="w-24 rounded-md border px-3 py-2 text-sm"
-        value={durationMinutes}
-        onChange={(event) => setDurationMinutes(event.target.value)}
-      />
-      <input
-        name="price"
-        type="number"
-        step="0.01"
-        placeholder="Price"
-        className="w-28 rounded-md border px-3 py-2 text-sm"
-        value={price}
-        onChange={(event) => setPrice(event.target.value)}
-      />
-      <input
-        name="notes"
-        placeholder="Notes"
-        className="w-40 rounded-md border px-3 py-2 text-sm"
-      />
-      <select name="status" className="rounded-md border px-3 py-2 text-sm">
-        {Object.values(AppointmentStatus).map((status) => (
-          <option key={status} value={status}>
-            {status}
-          </option>
-        ))}
-      </select>
-      <select name="paymentStatus" className="rounded-md border px-3 py-2 text-sm">
-        {Object.values(PaymentStatus).map((status) => (
-          <option key={status} value={status}>
-            {status}
-          </option>
-        ))}
-      </select>
-      <button
-        type="submit"
-        className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
-      >
-        Add
-      </button>
+
+      <div className="mt-4 grid gap-4 xl:grid-cols-[0.6fr_0.6fr_1fr_0.7fr_0.7fr_auto]">
+        <div className="space-y-1">
+          <div className="text-xs font-medium text-muted-foreground">
+            Duration (min)
+          </div>
+          <input
+            name="durationMinutes"
+            type="number"
+            placeholder="Min"
+            required
+            className="w-full rounded-md border px-3 py-2 text-sm"
+            value={durationMinutes}
+            onChange={(event) => setDurationMinutes(event.target.value)}
+          />
+        </div>
+        <div className="space-y-1">
+          <div className="text-xs font-medium text-muted-foreground">Price</div>
+          <input
+            name="price"
+            type="number"
+            step="0.01"
+            placeholder="Price"
+            className="w-full rounded-md border px-3 py-2 text-sm"
+            value={price}
+            onChange={(event) => setPrice(event.target.value)}
+          />
+        </div>
+        <div className="space-y-1">
+          <div className="text-xs font-medium text-muted-foreground">Notes</div>
+          <input
+            name="notes"
+            placeholder="Notes"
+            className="w-full rounded-md border px-3 py-2 text-sm"
+          />
+        </div>
+        <div className="space-y-1">
+          <div className="text-xs font-medium text-muted-foreground">Status</div>
+          <select
+            name="status"
+            className="w-full rounded-md border px-3 py-2 text-sm"
+          >
+            {Object.values(AppointmentStatus).map((status) => (
+              <option key={status} value={status}>
+                {status}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="space-y-1">
+          <div className="text-xs font-medium text-muted-foreground">
+            Payment
+          </div>
+          <select
+            name="paymentStatus"
+            className="w-full rounded-md border px-3 py-2 text-sm"
+          >
+            {Object.values(PaymentStatus).map((status) => (
+              <option key={status} value={status}>
+                {status}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex items-end">
+          <button
+            type="submit"
+            className="w-full rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+          >
+            Add appointment
+          </button>
+        </div>
+      </div>
     </form>
   );
 }

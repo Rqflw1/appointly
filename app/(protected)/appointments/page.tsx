@@ -89,32 +89,60 @@ async function Page({ user, searchParams }: PageProps) {
         }
       />
 
-      <form className="flex flex-wrap items-center gap-2">
-        <input
-          name="date"
-          type="date"
-          defaultValue={dateFilter || ""}
-          className="rounded-md border px-3 py-2 text-sm"
-        />
-        <select name="status" defaultValue={statusFilter || ""} className="rounded-md border px-3 py-2 text-sm">
-          <option value="">All statuses</option>
-          {Object.values(AppointmentStatus).map((status) => (
-            <option key={status} value={status}>
-              {status}
-            </option>
-          ))}
-        </select>
-        <select name="paymentStatus" defaultValue={paymentFilter || ""} className="rounded-md border px-3 py-2 text-sm">
-          <option value="">All payments</option>
-          {Object.values(PaymentStatus).map((status) => (
-            <option key={status} value={status}>
-              {status}
-            </option>
-          ))}
-        </select>
-        <button type="submit" className="rounded-md border px-3 py-2 text-sm">
-          Filter
-        </button>
+      <form className="rounded-2xl border bg-white p-4 shadow-sm">
+        <div className="grid gap-3 md:grid-cols-[0.6fr_1fr_1fr_auto]">
+          <div className="space-y-1">
+            <div className="text-xs font-medium text-muted-foreground">Date</div>
+            <input
+              name="date"
+              type="date"
+              defaultValue={dateFilter || ""}
+              className="w-full rounded-md border px-3 py-2 text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <div className="text-xs font-medium text-muted-foreground">
+              Status
+            </div>
+            <select
+              name="status"
+              defaultValue={statusFilter || ""}
+              className="w-full rounded-md border px-3 py-2 text-sm"
+            >
+              <option value="">All statuses</option>
+              {Object.values(AppointmentStatus).map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1">
+            <div className="text-xs font-medium text-muted-foreground">
+              Payment
+            </div>
+            <select
+              name="paymentStatus"
+              defaultValue={paymentFilter || ""}
+              className="w-full rounded-md border px-3 py-2 text-sm"
+            >
+              <option value="">All payments</option>
+              {Object.values(PaymentStatus).map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-end">
+            <button
+              type="submit"
+              className="w-full rounded-md border px-3 py-2 text-sm"
+            >
+              Filter
+            </button>
+          </div>
+        </div>
       </form>
 
       {appointments.length === 0 ? (
